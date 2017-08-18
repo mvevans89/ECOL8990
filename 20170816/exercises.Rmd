@@ -1,0 +1,82 @@
+---
+title: "Data Import and Management"
+output: html_document
+date: "2017-08-16"
+---
+
+These is the excercises from ECOL8990 on 2017-08-16. All exercises (or most) have also been repeated using the `tidyverse`. These dataframes are denoted with a T appended to the end.
+
+```{r}
+library(reshape2)
+library(tidyr)
+library(dplyr)
+```
+
+# Intro
+
+```{r}
+sm <- read.csv("data/Ketter_soil_moisture_2014.csv")
+
+sm.long <- melt(sm, id.vars=c("Day", "Bin"), variable.name= "Depth", value.name= "GWC")
+#using tidyverse
+sm.longTidy <- sm %>%
+  gather(key=Depth, value=GWC, GWC_30cm, GWC_10cm)
+
+sm.long <- sm.long[order(sm.long$Bin, sm.long$Day, sm.long$Depth),]
+
+#tidyverse
+sm.longT <- sm.long %>%
+  select(Bin, Day, Depth, GWC) %>%
+  mutate(newDepth=case_when(
+    Depth == "GWC_30cm" ~ 30,
+    Depth == "GWC_10cm" ~ 10
+  )) %>%
+  select(-Depth) %>%
+  rename(Depth=newDepth)
+
+#write.csv(sm.longT, "data/Ketter_sm2014_long.csv", row.names=F)
+
+```
+
+```{r}
+rm(list=ls())
+```
+
+Read in file from before
+
+```{r}
+sm.long <- read.csv("data/Ketter_sm2014_long.csv")
+```
+
+```{r}
+sm.wide <- dcast(sm.long, Bin+Day~Depth, value.var="GWC")
+
+names(sm.wide)[3:4] <- c("GWC_10cm", "GWC_30cm")
+sm.wide$Delta_GWC <- sm.wide$GWC_10cm - sm.wide$GWC_30cm
+
+#  Using tidyverse
+sm.wideT <- sm.long %>%
+  spread(key=Depth, value=GWC) %>%
+  rename(GWC_10cm=`10`, GWC_30cm=`30`) %>%
+  mutate(Delta_GWC=GWC_10cm-GWC_30cm)
+```
+
+# Exercise 1
+
+```{r}
+dataFiles <- list.files("data/", full.names = T)
+corv2006 <- read.csv(dataFiles[1])
+corv2007 <- read.csv(dataFiles[2])
+
+corv2006Long <- corv2006 %>%
+  gather(key=species, value=abundance, Sp1:Sp5) %>%
+  mutate(year=2006)
+
+corv2007Long <- corv2007 %>%
+  gather(key=species, value=abundance, Sp1:Sp7) %>%
+  mutate(year=2007)
+
+corvAll <- rbind(corv2006Long, corv2007Long)
+```
+
+

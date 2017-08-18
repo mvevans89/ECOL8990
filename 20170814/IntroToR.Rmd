@@ -1,0 +1,112 @@
+---
+title: "Intro to R"
+author: "Michelle Evans"
+date: "8/14/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load Packages
+
+```{r}
+library(lattice)
+library(MASS)
+library(nlme)
+library(survival)
+```
+
+```{r}
+example(lm)
+demo(graphics)
+```
+
+```{r}
+2+2
+3.2^2
+log(42/7.3)
+5+6+3+6+4+2+4+8+
+  3+2+7
+1.2e3
+3/0
+x <- 5
+y <- 2
+z <- x^y
+
+y <- scan() #basically allows you to type in numbers into console
+```
+
+```{r}
+y <- c(1,2,3,2,1,2,2)
+mean(y)
+min(y)
+max(y)
+```
+
+Missing Values
+
+```{r}
+H <- c(2.3, NA, 3.4, 5.6, NA, 4.3, 7.1, 6.2, 1.9 ,4.5)
+length(H)
+mean(H)
+mean(H, na.rm=T)
+
+```
+
+Working with real data (downloaded from eLC)
+
+```{r}
+tree.h <- read.table("height.txt", header=T)
+head(tree.h)
+
+str(tree.h)
+attach(tree.h) #using attach is generally thought of as bad
+mean(Diameter)
+detach(tree.h)
+
+hist(tree.h$Height)
+tapply(tree.h$Height, tree.h$Sp, mean)
+
+tree.ag <- aggregate(Height~Sp, data=tree.h, mean)
+tree.ag
+```
+
+Visualizing Data
+
+```{r}
+plot(tree.h$Diameter, tree.h$Height)
+
+plot(tree.h$Diameter, tree.h$Height, col="dodgerblue")
+
+plot(tree.h$Diameter, tree.h$Height, col=2)
+
+plot(tree.h$Diameter, tree.h$Height, 
+     xlab="Diam (cm)", 
+     ylab="Height (m)")
+```
+
+```{r}
+tree.sub <- tree.h[tree.h$Sp=="BAMA" | tree.h$Sp=="OCPU",]
+
+plot(tree.h$Sp, tree.h$Height)
+
+gl <- read.csv("grazing_lawn.csv")
+
+str(gl)
+```
+
+```{r}
+par(mfrow=c(2,2)) #make sure panel is big enough
+
+plot(gl$In_out, gl$N, xlab="Location", ylab="% N")
+plot(gl$In_out, gl$P, xlab="Location", ylab="% P")
+plot(gl$In_out, gl$LS, xlab="Location", ylab="L:S Ratio")
+plot(gl$In_out, gl$G, xlab="Location", ylab="Grazing Intensity")
+
+
+```
+
+
+
