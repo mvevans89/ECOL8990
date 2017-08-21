@@ -10,6 +10,7 @@ These is the excercises from ECOL8990 on 2017-08-16. All exercises (or most) hav
 library(reshape2)
 library(tidyr)
 library(dplyr)
+library(stringr)
 ```
 
 # Intro
@@ -100,3 +101,59 @@ nyl.Precip <- nyl %>%
 nyl.ag <- full_join(nyl.sm, nyl.Precip, by="Day")
 ```
 
+# Exercise 2
+
+Turn nyl.sm into long format
+```{r}
+nyl.sm.l <- nyl.sm %>%
+  gather(key=ProbeID, value=PercVWC, VWC1_5:VWC4_10)
+class(nyl.sm.l$Day)
+class(nyl.sm.l$ProbeID)
+```
+
+Split location and depth
+```{r}
+nyl.sm.split <- nyl.sm.l %>%
+  separate(ProbeID, c("Loc", "Depth"), sep="_", remove=F) %>%
+  select(Day, ProbeID, VWC=PercVWC, Loc, Depth)
+head(nyl.sm.split)
+nyl.sm.split$Depth <- as.numeric(nyl.sm.split$Depth)
+```
+
+Pair with GPS Locations
+```{r}
+gps <- read.csv("data/Nylsvlei_Probe_GPS.csv")
+```
+
+Subset 10 cm locations
+```{r}
+nyl.sm.10 <- nyl.sm.split %>%
+  filter(Depth==10) %>%
+  group_by(Loc) %>%
+  summarise(meanVWC=mean(VWC))
+```
+
+Merge with GPS data
+```{r}
+nyl.sm.merge <- full_join(gps, nyl.sm.10, by="Loc")
+```
+
+Plot (base)
+```{r}
+radius <- sqrt(nyl.sm.merge$meanVWC/pi)
+symbols(nyl.sm.merge$X, nyl.sm.merge$Y, circles=radius, inches=0.25, xlab="Eastings (m)", ylab="Northings (m)")
+```
+
+Plot (ggplot)
+```{r}
+ggplot(data=nyl.sm.merge, aes(x=X, y=Y))+
+  geom_point(aes(size=sqrt(meanVWC)/pi), fill=NA)+
+  xlab("Eastings (m)")+
+  ylab("Nothings (m)")+
+  theme_base()+
+  guides(size=F)
+```
+
+# Extra exercise
+
+Soil moisture as a function of depth, location, and precipitation (three panel)
