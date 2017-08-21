@@ -79,4 +79,24 @@ corv2007Long <- corv2007 %>%
 corvAll <- rbind(corv2006Long, corv2007Long)
 ```
 
+#Data Logger Data
+
+```{r}
+nyl <- read.csv("data/CR1000_SM_5_min.dat", skip=3)
+colnames(nyl) <- c("Timestamp", "RN", "VWC1_5", "VWC1_10","VWC1_20", "VWC1_40", "VWC1_70", "VWC2_10", "VWC3_10", "VWC4_10", "Precip")
+
+time <- strptime(nyl$Timestamp, "%Y-%m-%d %H:%M:%S")
+objects(time)
+nyl$Day <- time$yday
+
+nyl.sm <- nyl %>%
+  group_by(Day) %>%
+  summarise_at(mean, .vars=vars(-Timestamp, -Precip, -RN)) 
+
+nyl.Precip <- nyl %>%
+  group_by(Day) %>%
+  summarise(PrecipSum=sum(Precip))
+
+nyl.ag <- full_join(nyl.sm, nyl.Precip, by="Day")
+```
 
