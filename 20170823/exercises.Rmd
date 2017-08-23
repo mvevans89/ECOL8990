@@ -1,0 +1,30 @@
+---
+title: "exercises"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Write a function to compute a factorial:
+```{r}
+fact <- function(x){
+  #' Calculate factorial 
+  #' @param x number to get factorial of
+  if (x>0){
+  new=1
+  for (i in x:1){
+    new <- i*new
+  }
+  }else if (x==0){
+    new=1
+  } else new=(paste0("Error: You cannot take a factorial of ", x))
+  return(new)
+}
+```
+
+Write a function `shannonWeiner` to compute the Shannon-Weiner diversity index.
+
+Takes a vector of spp. abundances and computes SW.
