@@ -28,3 +28,15 @@ fact <- function(x){
 Write a function `shannonWeiner` to compute the Shannon-Weiner diversity index.
 
 Takes a vector of spp. abundances and computes SW.
+```{r sw function}
+
+shannonWeiner <- function(spAbund){
+  p <- spAbund/sum(spAbund)
+  - (sum(p * log(p)))
+  # return(index) # don't necessarily neeed to return if you don't create an object
+}
+
+testSpecies <- c(100,94, 20, 43, 56)
+shannonWeiner(testSpecies)
+```
+

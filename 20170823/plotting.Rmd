@@ -1,0 +1,100 @@
+---
+title: "plotting"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load data}
+snp1 <- read.csv("data/Serengeti1.csv", header=T)
+```
+
+# Exercise 1 : Axis Labels
+
+```{r}
+plot(snp1$Site, snp1$Ht)
+
+plot(snp1$Site, snp1$Ht, xlab="Site", ylab="Height(m)")
+```
+
+# Using `lattice`
+
+```{r}
+library(lattice)
+xyplot(Ht~Dam | Sp, data=snp1) #normal y~x, with | representing facet
+xyplot(Ht~Dam |Site, snp1)
+
+densityplot(~Ht, snp1) #PDF
+histogram(~Ht|Sp, snp1)
+bwplot(Ht~Site|Sp, snp1)
+```
+
+# Using `ggplot2`
+
+```{r}
+library(ggplot2)
+library(ggthemes)
+
+ggplot(data=snp1, aes(x=Dam, y=Ht)) +
+  geom_point(color=1, size=2) +
+  theme_fivethirtyeight()+
+  scale_color_fivethirtyeight()+
+  xlab("Damage")+
+  ylab("Height(m)") +
+  facet_wrap(~Site)
+```
+
+# EXERCISES
+
+## Exercise 2
+
+Extract the number of trees per site and plot
+
+```{r}
+library(dplyr)
+snpDens <- snp1 %>%
+  group_by(Site, Plot) %>%
+  summarise(noTrees = n())
+
+ggplot(data=snpDens, aes(x=Site, y=noTrees)) +
+  geom_boxplot() +
+  theme_wsj() +
+  scale_color_wsj()
+```
+
+## Exercise 3
+
+Repeate for species acator and acarob
+
+```{r}
+snpDensSp <- snp1 %>%
+  group_by(Site, Plot, Sp) %>%
+  summarise(noTrees= n()) %>%
+  filter(Sp %in% c("acator", "acarob")) 
+  
+
+ggplot(data=snpDensSp, aes(x=Site, y=noTrees)) +
+  geom_boxplot(color=1) +
+  theme_wsj() +
+  scale_color_wsj()
+```
+
+## Exercise 4
+
+Extract data for plot 1 of site `KIT`
+```{r}
+kit1 <- snp1 %>%
+  filter(Site=="KIT" & Plot==1)
+```
+
+Make bubble plots
+
+```{r bubble plots}
+ggplot(data=kit1)+
+  geom_point(aes(x=X, y=Y, size=Ht), color="green")+
+  geom_point(aes(x=X, y=Y, size=Dam), color="red")+
+  theme_bw()
+```
+
