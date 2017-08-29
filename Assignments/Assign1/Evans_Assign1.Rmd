@@ -1,0 +1,86 @@
+---
+title: "Assignment 1"
+author: "Michelle Evans"
+date: "August 29, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+```
+
+This document is Assignment 1 for ECOL8990.
+
+# Exercise 1
+
+Using the ‘Serengeti2.csv’ file from this week’s class, produce a dataframe that calculates median tree height across sites, and then generate a plot of median height across sites as a function of year. Include the final plot in your Markdown document.
+
+```{r tree height plot, echo=F, warning=F}
+treeData <- read.csv("data/Serengeti2.csv")
+
+medHeight <- treeData %>%
+  group_by(Site, Year) %>%
+  summarise(medHt=median(Ht))
+
+ggplot(data=medHeight, aes(x=Year, y=medHt, group=Site))+
+  geom_point(aes(color=Site), size=2)+
+  theme_fivethirtyeight()+
+  scale_color_tableau()+
+  xlab("Year")+
+  ylab("Median Height (m)")+
+  ggtitle("Median tree height across sites by year")
+```
+
+
+# Exercise 2
+
+Write two R functions: one that can calculates the Euclidean distance between two given points with coordinates x1,y1 and x2,y2, and one that can calculate Simpson’s diversity index from a vector of species abundances. Include the R code for your functions in your Markdown document, and show a worked example.
+
+Euclidean Distance function `eucDistance`:
+```{r Euclidean distance function}
+eucDistance <- function(pt1, pt2){
+  #' Calculate euclidean distance between two points
+  #'
+  #' @param pt1 a vector of x and y coordinates for one point, ex c(1,10)
+  #' @param pt2 a vector of x and y coordinates for the second point, ex c(2,5)
+  #' @return the distance between the two points
+  #' @examples
+  #' eucDistance(pt1=c(0,0), pt2=c(5,10))
+  ((pt1[1]-pt2[1])^2+(pt1[2]-pt2[2])^2)^(1/2)
+}
+```
+
+```{r}
+eucDistance(pt1=c(4,-10), pt2=c(6,10))
+```
+
+Simpson's Diversity Index function `simpsonsDiv`. Note this is using following definition for Simpson's diversity index:
+
+$$ D = \frac{\sum_n(n(n-1))}{N(N-1)} $$
+
+```{r simpsons diversity index function}
+simpsonsDiv <- function(abundances){
+  #' Calculate Simpson's Diversity Index
+  #'
+  #' @param abundances a vector of species abundances
+  #' @return a single value of diversity
+  #' @example
+  #' simpsonsDiv(c(50,67,2,4,49,0,0,4,5,7))
+  numerator <- sum(abundances * (abundances-1))
+  denomenator <- sum(abundances) * (sum(abundances)-1)
+  numerator/denomenator
+}
+```
+
+
+```{r}
+simpsonsDiv(c(0,0,5,7,19,25,7))
+```
+
+# Exercise 3
+
+Using the ‘Datalogger_data.r’ script from the Aug 16 class, write a script that subsets the daily soil moisture data to include only location VWC1, and produce a line plot showing daily soil moisture (VWC) as a function of time, with separate lines for each probe depth (5 to 70 cm). Include the final plot in your Markdown document.
+
