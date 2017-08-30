@@ -1,8 +1,10 @@
 ---
 title: "Assignment 1"
 author: "Michelle Evans"
-date: "August 29, 2017"
-output: html_document
+date: "August 30, 2017"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -10,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(ggplot2)
 library(ggthemes)
+library(tidyr)
 ```
 
 This document is Assignment 1 for ECOL8990.
@@ -18,16 +21,18 @@ This document is Assignment 1 for ECOL8990.
 
 Using the ‘Serengeti2.csv’ file from this week’s class, produce a dataframe that calculates median tree height across sites, and then generate a plot of median height across sites as a function of year. Include the final plot in your Markdown document.
 
-```{r tree height plot, echo=F, warning=F}
+```{r tree height plot, echo=F, warning=F, fig.cap="Plot of median tree height (m) over year. Boxplot represents distributions across sites."}
 treeData <- read.csv("data/Serengeti2.csv")
 
 medHeight <- treeData %>%
   group_by(Site, Year) %>%
   summarise(medHt=median(Ht))
 
-ggplot(data=medHeight, aes(x=Year, y=medHt, group=Site))+
+ggplot(data=medHeight, aes(x=Year, y=medHt, group=Year))+
+  geom_boxplot(color="gray80")+
   geom_point(aes(color=Site), size=2)+
-  theme_fivethirtyeight()+
+  theme_gdocs()+
+  scale_x_continuous(breaks=c(2009, 2010, 2011, 2012))+
   scale_color_tableau()+
   xlab("Year")+
   ylab("Median Height (m)")+
@@ -83,4 +88,36 @@ simpsonsDiv(c(0,0,5,7,19,25,7))
 # Exercise 3
 
 Using the ‘Datalogger_data.r’ script from the Aug 16 class, write a script that subsets the daily soil moisture data to include only location VWC1, and produce a line plot showing daily soil moisture (VWC) as a function of time, with separate lines for each probe depth (5 to 70 cm). Include the final plot in your Markdown document.
+
+```{r load data, echo=F}
+loggers <- read.csv("data/CR1000_SM_5_min.dat", skip=3)
+colnames(loggers) <- c("Timestamp", "RN", "VWC1_5", "VWC1_10","VWC1_20", "VWC1_40", "VWC1_70", "VWC2_10", "VWC3_10", "VWC4_10", "Precip")
+
+time <- strptime(loggers$Timestamp, "%Y-%m-%d %H:%M:%S")
+
+loggers$Day <- time$yday
+```
+
+```{r, echo=F}
+dailyVWC1 <- loggers %>%
+  select(Day, contains("VWC1")) %>% #select on only vwc1
+  group_by(Day) %>%
+  summarise_all(mean) %>% #get means per day
+  ungroup() %>%
+  gather(key=ProbeID, value=VWC, VWC1_5:VWC1_70)#turn into long
+  
+# fix factors
+dailyVWC1$ProbeID <- factor(dailyVWC1$ProbeID, levels=c("VWC1_5", "VWC1_10", "VWC1_20", "VWC1_40", "VWC1_70"))
+```
+
+```{r, echo=F}
+ggplot(data=dailyVWC1[order(dailyVWC1$Day),], aes(x=Day, y=VWC, group=ProbeID))+
+  geom_line(aes(color=ProbeID))+
+  theme_gdocs()+
+  scale_color_tableau(labels=c("5 cm", "10 cm", "20 cm", "40 cm", "70 cm"))+
+  xlab("Day")+
+  ylab("VWC (%)")+
+  ggtitle("VWC over time and depth at Location 1")
+```
+
 
