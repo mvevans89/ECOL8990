@@ -1,4 +1,6 @@
 # Simple regression example
+library(tidyr)
+library(broom)
 
 # Input tree height data into dataframe H
 H <- read.csv("height.csv")
@@ -32,3 +34,20 @@ summary(model)
 anova(model)
 
 # EXERCISE: REDO THE REGRESSION AND ANOVA WITH LOG-TRANSFORMED VARIABLES
+
+# Plot height vs. diameter
+plot(log(buaf$Diameter),log(buaf$Height),xlab="Diam (cm)",ylab="Ht (m)",col="red")
+
+logReg <- lm(log(Height) ~ log(Diameter), data=buaf)
+summary(logReg)
+plot(logReg)
+rbind(glance(reg), glance(logReg))
+
+## Get predictions
+htPreds <- predict(reg, data=buaf)
+plot(htPreds, buaf$Height)
+abline(a=0, b=1, lty=2)
+
+newData <- data.frame(Diameter=c(9,12,16,21,33,40))
+newData$predHt<- predict(reg, newData)
+plot(x=newData$Diameter, y=newData$predHt)
