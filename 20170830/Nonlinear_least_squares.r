@@ -1,8 +1,8 @@
 # Nonlinear least-squares regression with nls function
 # Assumes that TypeII_FR.txt data is loaded and attached already
 # a and b coefficients from linearization fit
-a.lin <- 
-b.lin <- 
+a.lin <- 14.24
+b.lin <- 9.16
 fr <- read.csv("TypeII_FR.csv")
 nl.fit <- nls(Consumed ~ a.nls * Density / (b.nls  +Density), data = fr, 
               start = list(a.nls = 14, b.nls = 9))
