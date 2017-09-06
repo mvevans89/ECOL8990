@@ -1,0 +1,1 @@
+#fit a ricker function and quadratic equation to the growth data
