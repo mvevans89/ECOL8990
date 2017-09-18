@@ -21,3 +21,9 @@ for (i in 1:N){
 }
 f <- factor(Counts,levels=0:10)
 plot(f)
+
+mean(Counts)
+var(Counts)
+#does it match a poisson distribution?
+plot(1:10, dpois(1:10, lambda=2.5))
+#can increase sample size to make it fit the distritbution even more
