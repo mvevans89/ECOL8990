@@ -17,3 +17,4 @@ plot(sqrt.mod)
 # transforming didn't help. It may be that we need to try a new error distribution\
 
 # Now let's try a Poisson regression
+pois.mod <- 

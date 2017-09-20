@@ -1,9 +1,9 @@
 # Poisson likelihood for three values
 # Make a vector lambda
 lambda <- seq(0.1,10,0.1)
-like.2 <- dpois(3,lambda)
+like.2 <- dpois(2,lambda)
 like.4 <- dpois(4,lambda)
-like.5 <- dpois(4,lambda)
+like.5 <- dpois(5,lambda)
 like.all <- like.2*like.4*like.5
 # Plot joint Likelihood for the three values
 plot(lambda,like.all,type="l",col="blue",ylab="Likelihood")
