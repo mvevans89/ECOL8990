@@ -1,0 +1,30 @@
+---
+title: "Assignment 2"
+author: "Michelle Evans"
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#wd should be set to source file location
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+```
+
+# Exercise 1
+
+*Using the ‘Growth.csv’ file in the Assignment 2 folder, fit two nonlinear models relating growth rate to diameter: a Ricker and a quadratic. Include a plot showing the raw data and the two fitted lines in your Markdown document.*
+
+
+```{r}
+growth <- read.csv("../data/Growth.csv")
+#ricker
+rickForm <- as.formula(Growth~Diameter*exp(r*(1-Diameter/k)))
+rickMod <- nls(rickForm, 
+               data=growth, 
+               start=list(r=1.5, k=20))
+lines(x=0:50, y=predict(rickMod, data.frame(Diameter=0:50)))
+```
+
