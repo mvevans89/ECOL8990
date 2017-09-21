@@ -1,8 +1,11 @@
 ---
 title: "Assignment 2"
 author: "Michelle Evans"
-date: ""
-output: html_document
+date: '2017-09-27'
+output:
+  pdf_document: 
+    keep_tex: false
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -15,16 +18,85 @@ library(ggthemes)
 
 # Exercise 1
 
-*Using the ‘Growth.csv’ file in the Assignment 2 folder, fit two nonlinear models relating growth rate to diameter: a Ricker and a quadratic. Include a plot showing the raw data and the two fitted lines in your Markdown document.*
-
-
-```{r}
+```{r ex1 load data, include=F}
 growth <- read.csv("../data/Growth.csv")
+```
+
+```{r ex1 create models, include=F}
 #ricker
 rickForm <- as.formula(Growth~Diameter*exp(r*(1-Diameter/k)))
 rickMod <- nls(rickForm, 
                data=growth, 
                start=list(r=1.5, k=20))
-lines(x=0:50, y=predict(rickMod, data.frame(Diameter=0:50)))
+
+quadForm <- as.formula(Growth~a*Diameter^2+b*Diameter+c)
+quadMod <- nls(quadForm,
+               data=growth,
+               start=list(a=2, b=5, c=1))
+
 ```
+
+```{r ex1 plot, echo=F, fig.width=5}
+#plot points
+plot(growth$Diameter, growth$Growth, pch=16, col="gray80",
+     xlab="Diameter (m)",
+     ylab="Growth")
+lines(x=0:50, y=predict(rickMod, data.frame(Diameter=0:50)),
+      col="gray20", lwd=3)
+lines(x=0:50, y=predict(quadMod, data.frame(Diameter=0:50)),
+      col="gray20", lwd=3, lty=3)
+legend(33,1.1,c("Ricker", "Quadratic"), lty=c(1,3), lwd=3, col="gray20",
+       cex=0.8, bty="n")
+mtext("Model Comparison on Raw Data")
+```
+
+# Exercise 2
+
+```{r}
+set.seed(101)
+# Generate random x and y data
+x <- runif(30, min = 0, max = 10)
+y <- rnorm(30, mean = 2 * x, sd = 2)
+# Make a vector of potential slope values
+slopes <- seq(from = 0.1, to = 4, by = 0.1)
+# Make a vector to store the residual sums of squares
+ss <- numeric(length(slopes))
+# Loop through the slope values
+for (i in 1:length(slopes)){
+   #calculate predicted y (fx)
+  fx <- x * slopes[i] #assume intercept=0
+  ss[i] <- sum((fx-y)^2) #calculate RSS and save
+}
+```
+
+```{r ex2 plot, echo=F, fig.width=5}
+plot(slopes, ss, pch=16, col="gray20",
+     xlab="Regression Coefficient",
+     ylab="Residual Sum of Squares",
+     main="Model Fit")
+```
+
+# Exercise 3
+
+```{r ex3 load data, include=F}
+wildebeest <- read.csv("../data/Wildebeest.csv")
+```
+
+Rearranged "linearized" equation:
+
+$$ \frac{N_{t+1}-N_t}{N_t}=r-\frac{r}{k}N_t$$
+
+where $Y=\frac{N_{t+1}-N_t}{N_t}$, the intercept is $r$, and the slope is $-\frac{r}{k}$. I then fit this linear regression model to the data to estimate r and k.
+
+```{r fit lm, include=F}
+#rearrange data in dataframe
+wildData <- wildebeest %>%
+  mutate(nt=Wildebeest) %>%
+  mutate(nt1=lead(nt)) %>%
+  na.omit() %>% #this means dropping last datapoint
+  mutate(Y=(nt1-nt)/nt) 
+wildLm <- lm(Y~nt, data=wildData)
+```
+
+Based on the linear regression, r = `r round(coef(wildLm)[1],3)` and k = `r as.character(round(-coef(wildLm)[1]/coef(wildLm)[2],0))` (ignoring uncertainty for the sake of simplicity).
 
