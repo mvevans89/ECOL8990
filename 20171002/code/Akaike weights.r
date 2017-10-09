@@ -28,18 +28,18 @@ aic <- AICtab(p1, p2 , p3, p4, p5, weights = TRUE)
 print(aic)
 
 # Part 3: Recalculate Akaike weights for the top models
-w4 <- AIC(p4)/(AIC(p4)+AIC(p5))
-w5 <- AIC(p5)/(AIC(p4)+AIC(p5))
+w4 <- aic$weight[2]/(aic$weight[1]+aic$weight[2])
+w5 <- aic$weight[1]/(aic$weight[1]+aic$weight[2])
 
 # New data for which we need predictions
-Newbas <- c(1.3,5.2,4.3,6.7,7.2,0.9,2.3,13) # New data
+Newbas <- c(1.3,5.2,4.3,6.7,7.2,0.9,2.3) # New data
 
 # Part 4: Predict Recruits from a new set of plots
-pred4 <- exp(coef(p4)[1]*Newbas^(coef(p4)[2]))
-pred5 <- exp((coef(p5)[1]*Newbas)/(coef(p5)[2]+Newbas))
+pred4 <- coef(p4)[1]*Newbas^(coef(p4)[2])
+pred5 <- (coef(p5)[1]*Newbas)/(coef(p5)[2]+Newbas)
 # Part 5: Obtain weighted predictions 
 pred.weight <- pred4*w4+pred5*w5
 # Plot them all together to compare
-plot(Newbas, pred4, col="red", pch=16, cex=1.5)
-points(Newbas, pred5, col="blue", pch=16, cex=1.5)
-points(Newbas, pred.weight, col="green", pch=16, cex=1.5)
+plot(Newbas, exp(pred4), col="red", pch=16, cex=1.5)
+points(Newbas, exp(pred5), col="blue", pch=16, cex=1.5)
+points(Newbas, exp(pred.weight), col="green", pch=16, cex=1.5)
