@@ -1,0 +1,122 @@
+---
+title: 'ECOL 8990: Assignment 3'
+author: "Michelle Evans"
+date: "10/11/2017"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(MuMIn)
+library(cowplot)
+```
+
+
+```{r load and format data}
+infest <- read.csv("data/Infestation.csv", stringsAsFactors = F)
+infest <- mutate(infest, INFRATE=INF/(INF+NINF))
+```
+
+# 1 
+
+```{r}
+p1 <- ggplot(data=infest, aes(x=ELEV, y=INFRATE))+
+  geom_point(aes(color=SPECIES))+
+  theme_bw()+
+  xlab("Elevation (m)")+
+  ylab("Infestation Rate (%)")
+
+p2 <- ggplot(data=infest, aes(x=ELEV, y=INFRATE))+
+  geom_point(aes(color=SEASON))+
+  theme_bw()+
+  xlab("Elevation (m)")+
+  ylab("Infestation Rate (%)")
+
+p3 <- ggplot(data=infest, aes(x=MAP, y=INFRATE))+
+  geom_point(aes(color=SPECIES))+
+  theme_bw()+
+  xlab("Annual Precipitation (mm)")+
+  ylab("Infestation Rate (%)")
+
+p4 <- ggplot(data=infest, aes(x=MAP, y=INFRATE))+
+  geom_point(aes(color=SEASON))+
+  theme_bw()+
+  xlab("Annual Precipitation (mm)")+
+  ylab("Infestation Rate (%)")
+
+p5 <- ggplot(data=infest, aes(x=as.factor(SEASON), y=INFRATE))+
+  geom_boxplot(aes(color=SPECIES))+
+  theme_bw()+
+  xlab("Season")+
+  ylab("Infestation Rate (%)")
+
+p6 <- ggplot(data=infest, aes(x=as.factor(SPECIES), y=INFRATE))+
+  geom_boxplot()+
+  theme_bw()+
+  xlab("Species")+
+  ylab("Infestation Rate (%)")
+
+plot_grid(p1,p2,p3,p4,p5,p6, ncol=2)
+```
+
+# 2
+
+Based on the plots above, there are few obvious relationships between variables.  There is clearly an interaction between season and species, and may be an effect of elevation when controlling for season and species. I therefore chose to create candidate models using season, species, and elevation, and their interaction.
+
+```{r create models, echo=T}
+mod0 <- glm(cbind(INF, NINF)~1, 
+            data=infest,
+            family = binomial())
+
+mod1 <- glm(cbind(INF, NINF)~SEASON, 
+            data=infest,
+            family = binomial())
+
+mod2 <- glm(cbind(INF, NINF)~SEASON+SPECIES, 
+            data=infest,
+            family = binomial())
+
+mod3 <- glm(cbind(INF, NINF)~SEASON*SPECIES, 
+            data=infest,
+            family = binomial())
+
+mod4 <- glm(cbind(INF, NINF)~ELEV, 
+            data=infest,
+            family = binomial())
+
+mod5 <- glm(cbind(INF, NINF)~ELEV+SPECIES, 
+            data=infest,
+            family = binomial())
+
+mod6 <- glm(cbind(INF, NINF)~ELEV*SPECIES, 
+            data=infest,
+            family = binomial())
+
+mod7 <- glm(cbind(INF, NINF)~ELEV+SPECIES*SEASON, 
+            data=infest,
+            family = binomial())
+
+mod8 <- glm(cbind(INF, NINF)~ELEV*SPECIES*SEASON, 
+            data=infest,
+            family = binomial())
+
+mod9 <- glm(cbind(INF, NINF)~SPECIES, 
+            data=infest,
+            family = binomial())
+
+```
+
+# 3
+
+```{r}
+aic <- AICc(mod0, mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9)
+aic$weights <- Weights(aic) 
+knitr::kable(aic, digits=2)
+```
+
+The AIC framework results in some unlikely conclusions about my models, namely that one model is weighted one, with all others weighted zero. In my initial exploration of models, I found a similar result with different models than those above, with the model with the most interactions being weighted one. The candidate models build off of each other, and do not differ that much, leading me to believe that this model selection is incorrect. I would conclude that while this model is the best fit, all of the models' fits are so poor that model selection by AIC is meaningless. If I were to continue to use AIC for model selection, I would further investigate my error distribution and any non-linear relationships.
