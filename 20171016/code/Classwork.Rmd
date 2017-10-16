@@ -1,0 +1,18 @@
+---
+title: "Classwork"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In class work from 2017-10-16.
+
+# Poisson overdispersion: seedling data
+
+```{r}
+seed <- read.csv("../data/Brsp_seedl2.csv", stringsAsFactors = F)
+```
+
+
