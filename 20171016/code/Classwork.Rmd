@@ -1,0 +1,128 @@
+---
+title: "Classwork"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In class work from 2017-10-16.
+
+# Poisson overdispersion: seedling data
+
+## Regular Poisson
+
+```{r}
+seed <- read.csv("../data/Brsp_seedl2.csv", stringsAsFactors = F)
+
+seedl.pois <- glm(Recruits ~ Basal, 
+                  family = poisson,
+                  data = seed)
+
+summary(seedl.pois)
+
+deviance(seedl.pois)/df.residual(seedl.pois)
+86.74/16 # resid dev : df is > 1
+```
+
+Based on the ratio of residual deviance to degrees of freedom, this looks overdispersed.
+
+## Quasi-likelihood approach
+
+```{r}
+seedl.quasipois <- glm(Recruits ~ Basal,
+                       family = quasipoisson,
+                       data = seed)
+
+summary(seedl.quasipois)
+```
+
+The dispersion parameter is now a higher value (> 4).
+
+Doesn't actually test this approach becuase resid dev remains unchanged.
+
+## Negative Binomial approximation in GLM
+
+```{r}
+library(MASS)
+
+seedl.nb <- glm.nb(Recruits ~ Basal,
+                   data = seed)
+
+summary(seedl.nb)
+```
+
+You can compare this to the poission using AIC (not quasipossion!)
+
+# Binomial Overdispersion
+
+```{r}
+tad <- read.csv("../data/Tadpoles1.csv")
+```
+
+```{r}
+binom.glm <- glm(cbind(Killed, Initial-Killed) ~ Initial, 
+                 family = binomial,
+                 data = tad)
+
+summary(binom.glm)
+```
+
+## Formal test for overdispersion using chi-sq distribution
+
+```{r}
+1 - pchisq(deviance(binom.glm), df.residual(binom.glm))
+```
+
+Here, we are using deviance to approximate the chi-squared statistic and calculating the p-value using that and the residual df. This very low p-value signifies that it is overdispersed.
+
+## Quasi likelihood approach
+
+```{r}
+qbinom.glm <- glm(cbind(Killed, Initial-Killed) ~ Initial,
+                  family = quasibinomial,
+                  data = tad)
+
+summary(qbinom.glm)
+```
+
+# Beta-binomial example using 'mle2'
+
+GLM doesn't have a beta-binomial, so you can fit it yourself using the MLE approach.
+
+## Set up binomial
+
+```{r}
+library(bblme)
+library(emdbook)
+
+binomNLL <- function(a, c, N, K){
+  -sum(dbinom(K, 
+              prob=exp(a*N+C) / (1 + exp(a*N+C)), 
+              size=N,
+              log=T))
+}
+
+binom.fit <- mle2
+
+summary(binomNLL)
+
+```
+
+```{r}
+betabinomNLL <- function(a, c, theta, N, K){
+  -sum(dbetabinom(K, 
+                  size=N,
+                  prob=exp(a*N+c) / (1 + exp(a*N+c)),
+                  theta=theta,
+                  log=T)) #use theta =10
+}
+
+betabinom.fit <- mle2(betabinomNLL, start=list(a = -0.008, c = -0.1, theta = 10),
+                      data= list(N = tad$Initial, K = tad$Killed))
+
+summary(betabinom.fit)
+```
+
+
