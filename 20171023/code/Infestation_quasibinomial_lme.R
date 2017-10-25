@@ -3,7 +3,7 @@ library(lattice)
 library(MuMIn)
 
 # Loda infestation data
-infes <- read.csv("Infestation.csv")
+infes <- read.csv("../data/Infestation2.csv")
 
 # Plot data
 xyplot(infes$INF/(infes$INF+infes$NINF) ~ infes$MAP | infes$SEASON,
@@ -55,7 +55,10 @@ mod1 <- lme(logit.p ~ MAP, data=infes, random = ~ 1 | SITE, method = "ML")
 mod2 <- lme(logit.p ~ MAP + SPECIES, data=infes, random = ~ 1 | SITE, method = "ML")
 mod3 <- lme(logit.p ~ MAP + SPECIES + SEASON, data=infes, random = ~ 1 | SITE, method = "ML")
 mod4 <- lme(logit.p ~ MAP * SPECIES, data=infes, random = ~ 1 | SITE, method = "ML")
-mod5 <- lme(logit.p ~ SPECIES * SEASON, data=infes, random = ~ 1 | SITE, method = "ML")
+mod5 <- lme(logit.p ~ SEASON * SPECIES, data=infes, random = ~ 1 | SITE, method = "ML")
 mod6 <- lme(logit.p ~ MAP + SPECIES + SEASON + MAP * SPECIES + SEASON * SPECIES, data=infes, 
             random = ~ 1 | SITE, method = "ML")
 AIC(mod0,mod1,mod2,mod3,mod4,mod5,mod6)
+
+summary(mod5)
+anova(mod5)
