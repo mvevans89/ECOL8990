@@ -2,7 +2,9 @@
 title: "Assignment 4"
 author: "Michelle Evans"
 date: "October 30, 2017"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -34,8 +36,6 @@ overdisp_fun <- function(model) {
 
 
 # 1
-
-*The ‘Tree_plot_exercise.R’ file contains a modified version of the simulated tree growth dataset we used in class to compare the lm and lme approaches as random effects vary in size. I modified this version so that the entire dataframe is created within the script instead of importing the original .csv file with Species and Plot columns. In this version you can alter the total sample size (parameter N) in the dataset (the number of species and plots remain constant). Analyze the data using an lme model (with Plotfact as a random effect).*
 
 Create function from script. Note that Plotfact is now included in the model under column PlotID:
 
@@ -81,7 +81,7 @@ ggplot(data=tree, aes(x=Species, y=Y))+
   facet_wrap(~PlotID)
 ```
 
-Analyze using `lme` model:
+Analyze using `lmer` model:
 
 ```{r}
 mod0 <- lmer(Y~1 + (1|PlotID),
@@ -94,12 +94,12 @@ summary(mod1)
 anova(mod0, mod1)
 plot(mod1)
 overdisp_fun(mod1)
+confint(mod1)
 ```
 
+The model is overdispersed, however the effect of Species is significant, as measured via a comparison to the null model with an anova and 95% confidence intervals.
 
 # 2
-
-*Now create a new dataframe with mean growth rate values per species per plot. Re-analyze the data with Species as the fixed effect and Plotfact as the random effect, but at the level of plot rather than individual tree. How do the results change?*
 
 Aggregate data
 ```{r}
@@ -114,20 +114,20 @@ modNew0 <- lmer(growth ~ 1 + (1|PlotID),
                data = treePlot)
 modNew1 <- lmer(growth ~ Species + (1|PlotID),
                data = treePlot)
-summary(modNew)
+summary(modNew1)
 
 anova(modNew0, modNew1)
 plot(modNew1)
 overdisp_fun(modNew1)
+confint(modNew1)
 ```
 
 The results are qualitatively similar to those above. The effect of species is significant in both cases, with Species A > Species B > Species C in growth rates. However, the model at the plot level is not overdispersed as the one at the level of the individual tree is.
 
-# 3d
-
-*Now modify the code (using a loop) so that this exercise is repeated for different values of N (32, 64, 100, 150, 200). Store the resulting p-values from the two lme models (individual-level and plot-level) in vectors and then plot the relationship between N and these p-values as lines.*
+# 3
 
 ```{r}
+set.seed(8675309)
 Nvec <- c(32, 64, 100, 150, 200)
 results <- data.frame(N = Nvec, 
                       pvalueInd = NA, 
@@ -161,4 +161,4 @@ legend(col = c("forestgreen", "dodgerblue"),
 mtext("lme results for different values of N")
 ```
 
-Analyzing data at the plot level reduces the power of the analysis because information is lost by aggregating to the mean, however as N increases, this becomes less of an issue because the variance within a species becomes smaller (even though information is being lost, the mean is more precise). It is important to note, however, that this is the result of one simulation, and is not WORD.
+Analyzing data at the plot level reduces the power of the analysis because information is lost by aggregating to the mean, however as N increases, this becomes less of an issue because the variance within a species becomes smaller (even though information is being lost, the mean is more precise). It is important to note, however, that this is the result of one simulation, and rerunning it with different seeds results in some qualitatively different results.
