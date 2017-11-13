@@ -1,0 +1,7 @@
+library(nlme)
+rain <- read.csv("SNP_rainfall.csv")
+ols.mod <- gls(Rainfall ~ Year, data = rain)
+plot(ACF(ols.mod, form = ~ Year, maxLag = 10), alpha = 0.05)
+ar1.mod <- gls(Rainfall ~ Year, data = rain, correlation = corAR1())
+plot(ACF(ar1.mod, form = ~ Year, maxLag = 10, resType = 'n'), alpha = 0.05)
+anova(ols.mod, ar1.mod)
