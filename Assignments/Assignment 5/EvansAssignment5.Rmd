@@ -12,6 +12,7 @@ library(MASS)
 library(nlme)
 library(pgirmess)
 library(geosphere)
+library(ape)
 ```
 
 
@@ -40,11 +41,13 @@ MAPvar <- with(treeData, data.frame(correlog(coords = cbind(XScaled, YScaled), z
 plot(MAPvar$dist.class, MAPvar$coef, type = "l", xlab = "Lag distance", ylab = "Moran I")
 mtext("Variogram of MAP")
 abline(h=0, col="red")
+abline(v=MAPvar$dist.class[which(MAPvar$coef<0.05)[1]], col="red")
 
 FIREvar <- with(treeData, data.frame(correlog(coords = cbind(XScaled, YScaled), z = FIRE, method = "Moran")))
 plot(FIREvar$dist.class, FIREvar$coef, type = "l", xlab = "Lag distance", ylab = "Moran I")
 mtext("Variogram of FIRE")
 abline(h=0, col="red")
+abline(v=FIREvar$dist.class[which(FIREvar$coef<0.05)[1]], col="red")
 ```
 
 Both of the variables are autocorrelated until about 1 - 1.5 rescaled distance units away.
@@ -69,7 +72,7 @@ plot(Variogram(modExp, resType = "n", form = ~XScaled + YScaled), main = "Expone
 knitr::kable(anova(mod1, modExp))
 ```
 
-The model with spatial autocorrelation `modExp` has a higher log-Likelihood (138.67 vs. 124.270). It's semivariogram also begins at 1 and is flat, compared to the model without spatial autocorrelation that increases with distance.
+The model with spatial autocorrelation `modExp` has a higher log-Likelihood (138.67 vs. 124.270). It's semivariogram also begins at 1 and is flat, compared to the model without spatial autocorrelation that increases with distance until about 1.5 (agreeing with the results from # 1).
 
 # 3
 
@@ -117,9 +120,11 @@ Conduct a model selection exercise using gls. What is the top model? Examine the
 
 ```{r}
 MuMIn::Weights(AIC(mod1, modExp, modLin, modSpher, modGauss))
+
+plot(Variogram(modExp, resType = "n", form = ~XScaled + YScaled), main = "Exponential")
 ```
 
-An AIC weighting scheme identifies the model with the exponential spatial autocorrelation as having the best fit, receiving baout 61% of the weight. All of the semivariograms above were using normalized residuals. The line is flat and starts at the maximum value, so I think this autocorrelation function performs well.
+An AIC weighting scheme identifies the model with the exponential spatial autocorrelation as having the best fit, receiving about 61% of the weight. The line is flat and starts at the maximum value, so I think this autocorrelation function performs well.
 
 # 5
 
@@ -130,11 +135,12 @@ Now rerun your models in an OLS framework by thinning your data set. You previou
 distance <- as.matrix(dist(cbind(treeData$XScaled, treeData$YScaled), diag = T))
 diag(distance) <- NA
 
-#based on thinning algorithm from spThin package
+#based on thinning algorithm from 'spThin' package
 treeThin <- treeData
-while(min(distance, na.rm = T) < 1.3 & nrow(treeThin) > 1){ #loop until each one is gone
-  nearNb <- which(distance < 1.3, arr.ind = T)[,1]
-  toRemove <- as.numeric(names(which(table(nearNb) == max(table(nearNb))))) #drop that point which is closest to the most points
+while(min(distance, na.rm = T) < 1 & nrow(treeThin) > 1){ #loop until each one is gone
+  nearNb <- which(distance < 1, arr.ind = T)[,1]
+   #drop that point which is closest to the most points
+  toRemove <- as.numeric(names(which(table(nearNb) == max(table(nearNb)))))
   if (length(toRemove) > 1){
     toRemove <- sample(toRemove, 1)
   }
@@ -143,7 +149,7 @@ while(min(distance, na.rm = T) < 1.3 & nrow(treeThin) > 1){ #loop until each one
 }  
 ```
 
-This results in a very small data frame of only 7 samples.
+This results in a very small data frame of only 9 samples.
 
 ```{r}
 modThin <- gls(WCI ~ MAP + FIRE,
@@ -151,6 +157,7 @@ modThin <- gls(WCI ~ MAP + FIRE,
 
 summary(modThin)
 
-plot(Variogram(modThin, resType = "n", form = ~XScaled + YScaled), main = "No Autocorrelation")
+plot(Variogram(modThin, resType = "n", form = ~XScaled + YScaled), main = "Thinned Model")
 ```
 
+The thinned model has a significant negative effect of fire, while the model including exponential correlation did not.
