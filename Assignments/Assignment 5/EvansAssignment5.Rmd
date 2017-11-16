@@ -1,8 +1,10 @@
 ---
 title: 'ECOL 8890: Assignment 5'
 author: "Michelle Evans"
-date: "November 11, 2017"
-output: html_document
+date: ''
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -36,21 +38,21 @@ unscale <- function(var, column){
 Produce variograms for MAP and FIRE. Test for significant spatial autocorrelation using Moran’s I. What is the range of the spatial autocorrelation of the model residuals?
 
 ```{r MAP variogram}
-par(mfrow = c(2,1))
+par(mfrow = c(1,2))
 MAPvar <- with(treeData, data.frame(correlog(coords = cbind(XScaled, YScaled), z = MAP, method = "Moran")))
 plot(MAPvar$dist.class, MAPvar$coef, type = "l", xlab = "Lag distance", ylab = "Moran I")
 mtext("Variogram of MAP")
 abline(h=0, col="red")
-abline(v=MAPvar$dist.class[which(MAPvar$coef<0.05)[1]], col="red")
+abline(v=MAPvar$dist.class[which(MAPvar$coef<0.1)[1]], col="red")
 
 FIREvar <- with(treeData, data.frame(correlog(coords = cbind(XScaled, YScaled), z = FIRE, method = "Moran")))
 plot(FIREvar$dist.class, FIREvar$coef, type = "l", xlab = "Lag distance", ylab = "Moran I")
 mtext("Variogram of FIRE")
 abline(h=0, col="red")
-abline(v=FIREvar$dist.class[which(FIREvar$coef<0.05)[1]], col="red")
+abline(v=FIREvar$dist.class[which(FIREvar$coef<0.1)[1]], col="red")
 ```
 
-Both of the variables are autocorrelated until about 1 - 1.5 rescaled distance units away.
+Both of the variables are autocorrelated until about 1.3 rescaled distance units away.
 
 # 2
 
@@ -69,7 +71,7 @@ modExp <- gls(WCI ~ MAP + FIRE,
 
 plot(Variogram(modExp, resType = "n", form = ~XScaled + YScaled), main = "Exponential")
 
-knitr::kable(anova(mod1, modExp))
+(anova(mod1, modExp))
 ```
 
 The model with spatial autocorrelation `modExp` has a higher log-Likelihood (138.67 vs. 124.270). It's semivariogram also begins at 1 and is flat, compared to the model without spatial autocorrelation that increases with distance until about 1.5 (agreeing with the results from # 1).
@@ -109,7 +111,7 @@ plot(Variogram(modGauss, resType = "n", form = ~XScaled + YScaled), main = "Gaus
 ```
 
 ```{r}
-knitr::kable(anova(mod1, modExp, modLin, modSpher, modGauss))
+anova(mod1, modExp, modLin, modSpher, modGauss)
 ```
 
 There isn't a huge difference between most of the autocorrelation functions. The gaussian is visibly worse, and fits worse than the others, but the exponential and spherical fit similarly. The exponential fits marginally better, however.
@@ -131,14 +133,14 @@ An AIC weighting scheme identifies the model with the exponential spatial autoco
 Now rerun your models in an OLS framework by thinning your data set. You previously estimated the range of the semivariogram for one of your models. Thin your data using sample so that on average any two points are at least this distance apart. How might you do this?
 
 ```{r thin data}
-
+set.seed(5)
 distance <- as.matrix(dist(cbind(treeData$XScaled, treeData$YScaled), diag = T))
 diag(distance) <- NA
 
 #based on thinning algorithm from 'spThin' package
 treeThin <- treeData
 while(min(distance, na.rm = T) < 1 & nrow(treeThin) > 1){ #loop until each one is gone
-  nearNb <- which(distance < 1, arr.ind = T)[,1]
+  nearNb <- which(distance < 1.3, arr.ind = T)[,1]
    #drop that point which is closest to the most points
   toRemove <- as.numeric(names(which(table(nearNb) == max(table(nearNb)))))
   if (length(toRemove) > 1){
@@ -149,15 +151,18 @@ while(min(distance, na.rm = T) < 1 & nrow(treeThin) > 1){ #loop until each one i
 }  
 ```
 
-This results in a very small data frame of only 9 samples.
+This results in a very small data frame of only 7 samples.
 
 ```{r}
 modThin <- gls(WCI ~ MAP + FIRE,
             data = treeThin)
 
-summary(modThin)
-
 plot(Variogram(modThin, resType = "n", form = ~XScaled + YScaled), main = "Thinned Model")
+
+summary(modThin)
+summary(modExp)
 ```
 
-The thinned model has a significant negative effect of fire, while the model including exponential correlation did not.
+The thinned model has a significant negative effect of fire, while the model including exponential correlation did not. The semiovariogram is flat, however, so it does seem that thinning has reduced autocorrelation.  Due to the use of 'sample' in the thinning function, however, the dataset is randomly thinned, and rerunning this with different seeds will result in different thinned datasets, and some spurious looking semivariograms.
+
+In this case, thinning the data resulted in a loss of nearly 95% of our data, losing a lot of other valuable information in the process. Therefore, I think fitting a model including autocorrelation is the better choice in this instance.
