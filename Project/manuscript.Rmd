@@ -1,0 +1,48 @@
+---
+title: "Final Project"
+author: "Michelle Evans"
+date: "November 20, 2017"
+output: pdf_document
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Introduction
+
+# Materials/Methods
+
+## Mosquito Rearing
+
+We used a response surface design to rear  *Aedes aegypti* (Mexico, F5) and *Anopheles stephensi* (Walter Reed strain) first-instar larvae across 5 temperatures at 15 densities for a total of 75 treatments. There were three total density levels (32, 64, and 128 individuals), each with 5 ratios of Aedes:Stephensi (0:4,1:3,2:2,3:1,4:0) (FIGURE). The experimental setup was replicated twice.
+
+Larvae were reared in 32 oz. glass jars with in 250mL deionized water and 0.10g of pellet fish food (Hikari Cichlid Gold, baby size). Jars were covered with a fine mesh and placed in Percival incubators with a daily periodic fluctuation of 9&deg;C following the Parton-Logan equation, characterized by a sine wave during the daytime and an exponential curve during the nighttime [@parton1981]. Incubators were set to 80\% relative humidity and 12:12 hour light:dark cycle.
+
+To record information on mosquito survival and development rates, the daily numbers, species, and sex of mosquitoes were recorded per species ratio and temperature treatment.
+
+To record measures of adult female fecundity and longevity, we offered a subset of emerging mosquitoes a blood meal and followed individuals for the span of their life. The subset encompassed mosquitoes emerging during the period of peak emergence to ensure an adequate sample size and a similarly aged cohort at the time of the blood feed (4-6 days old). Adults were stored in reach-in Percival incubators at a constant 27&deg;C, 80\% relative humidity, 12:12 hr light:dark cycle and offered a 10\%  sucrose solution *ad libitum*. 48 hours prior to the blood meal, the sucrose solution was replaced with deionized water, which was removed 24 hours prior to the blood meal to encourage higher feeding rates. Blood meals consisting of whole human blood were administered through a water-jacketed membrance feeder kept at 38&deg;C. 
+
+Mosquitoes were allowed to feed for 20 minutes, after which blood fed females were sorted into individual 50 mL plastic centrifuge tubes. Moistened cotton was placed at the bottom of each tube, and covered with a filter paper to collect eggs. Each tube was covered with a fine mesh and kept in a walk-in incubator at the same environmental conditions noted above. Individual females were monitored daily for mortality and egg-laying events, after which the eggs were counted and the moistened cotton and filter paper removed. Females continued to be kept as above and offered a 10\% sucrose solution until death.
+
+## Calculating Population Growth Rates
+
+We calculated the per capita population growth rate (Equation \ref{eq:1}) per species ratio and temperature following [@livdahl1984]:
+
+\begin{equation} \label{eq:1}
+r' = \frac{ln(\frac{1}{N_0}\sum_{x}^{ }{A_x}f(\bar{w_x}))}{D+\frac{\sum_{x}^{ }xA_xf(\bar{w_x})}{\sum_{x}^{ }A_xf(\bar{w_x})}}
+\end{equation}
+
+Where $N_0$ is the initial number of female mosquitoes (assumed to be 50\% of the larvae), $A_x$ is the number of mosquitoes emerging on day $x$, $D$ is the time to reproduction following emergence, and $f(\bar{w_x})$ is the mean fecundity as measured by egg counts.
+
+## Fitting Models and Elasticity Analyses
+
+# Results
+
+# Discussion
+
+# Acknowledgements
+
+# References
