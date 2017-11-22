@@ -1,0 +1,288 @@
+---
+title: "Model Selection"
+author: "Michelle Evans"
+date: "11/22/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#wd should be set to Project folder (not RProject)
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir="../") #set wd to proj directory
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggthemes)
+library(viridis)
+library(nlme)
+library(lme4)
+library(MuMIn)
+```
+
+```{r}
+emergenceData <- readRDS("data/emergence.RData")
+survival <- readRDS("data/survival.RData")
+fecundity <- readRDS("data/fecundity.RData")
+AedesAll <- readRDS("data/AedesIndividualSurvival.RData")
+```
+
+This document goes through model selection for each analysis section of the ms.
+
+# Survival
+
+## Aedes
+
+Survival (or prob. of emergence) is a binary variable per individual mosquito. I use a generalized linear mixed model to explore the effect of Aedes density, Stephensi density, and temperature on emergence, with replicate as a random intercept. The data is subset to that of females (this can differ as males tend to develop more quickly and will emerge first). Predictor variables are scaled.
+
+Reformat data into successes and failures per jar.
+```{r format survival data}
+aeSurvival <- emergenceData %>%
+  filter(Species == "Aedes" & AeDens!= 0 & Sex == "Female") %>%
+  group_by(Replicate, Temp, TempNum, AeDens, StDens, Ratio) %>%
+  summarise(success = sum(Number, na.rm = T)) %>%
+  mutate(failure = (AeDens/2) - success) %>%
+  ungroup() %>%
+  #rescale predictor variables
+  mutate(TempScale = as.vector(scale(TempNum, center = F, scale = T))) %>%
+  mutate(AeDensScale = as.vector(scale(AeDens, center = F, scale = T))) %>%
+  mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T))) %>%
+  #drop jar that was all male
+  filter(!(Replicate == "A" & Temp == "24" & Ratio == "8:24"))
+  
+#for when more than 50% were female
+aeSurvival$failure[aeSurvival$failure<0] <- 0
+```
+
+Aedes model selection
+```{r}
+m0 <- glmer(cbind(success, failure) ~ 1 + (1|Replicate),
+                   data = aeSurvival,
+                   family = binomial(link = "logit"))
+m1 <- glmer(cbind(success, failure) ~ AeDensScale + (1|Replicate),
+                   data = aeSurvival,
+                   family = binomial(link = "logit"))
+m2 <- glmer(cbind(success, failure) ~ AeDensScale + TempScale + (1|Replicate),
+                   data = aeSurvival,
+                   family = binomial(link = "logit"))
+m3 <- glmer(cbind(success, failure) ~ AeDensScale + poly(TempScale,2) + (1|Replicate),
+                   data = aeSurvival,
+                   family = binomial(link = "logit"))
+m4 <- glmer(cbind(success, failure) ~ AeDensScale*poly(TempScale,2) + (1|Replicate),
+                   data = aeSurvival,
+                   family = binomial(link = "logit"))
+
+m5 <- glmer(cbind(success, failure) ~ AeDensScale + poly(TempScale,2) + StDensScale + (1|Replicate),
+                   data = aeSurvival,
+                   family = binomial(link = "logit"))
+
+m6 <- glmer(cbind(success, failure) ~ AeDensScale + poly(TempScale,2) * StDensScale + (1|Replicate),
+                   data = aeSurvival,
+                   family = binomial(link = "logit"))
+
+m7 <- glmer(cbind(success, failure) ~ AeDensScale + poly(TempScale,2) + StDensScale + TempScale:StDensScale + (1|Replicate),
+                   data = aeSurvival,
+                   family = binomial(link = "logit"))
+
+modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"), 
+                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7), broom::glance)),
+                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
+                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
+modelSummary
+anova(m6,m7)
+
+AedesSurvivalModel <- m7
+
+```
+
+Based on the above, model 7 (survival ~ AeDens + StDens + Temp^2 + StDens:Temp) fits best. Model 6 fits similary, but has an additional term of an interaction between polynomial temperature and stephensi density, and so the more parismonious model is chosen. Now we explore model residuals.
+
+```{r}
+plot(AedesSurvivalModel, id = 0.01, idLabels=~.obs)
+qqnorm(resid(AedesSurvivalModel))
+qqline(resid(AedesSurvivalModel), col = "red")
+
+aeSurvival$preds <- predict(AedesSurvivalModel)
+aeSurvival$resids <- resid(AedesSurvivalModel)
+
+ggplot(data = aeSurvival, aes(x=StDens, y = resids))+
+  geom_point() +
+  geom_smooth(se=T)+
+  theme_base()
+
+ggplot(data = aeSurvival, aes(x=AeDens, y = resids))+
+  geom_point() +
+  geom_smooth(se=T)+
+  theme_base()
+
+ggplot(data = aeSurvival, aes(x=TempNum, y = resids))+
+  geom_point() +
+  geom_smooth(se=T)+
+  theme_base()
+
+```
+
+The residuals for this model are slightly heteroskedastic, but I think are fine in general.
+
+```{r}
+summary(AedesSurvivalModel)
+
+confint(AedesSurvivalModel)
+```
+
+Plot predicted values in a heatmap.
+
+```{r}
+#heatmap plots
+newData <- expand.grid(AeDens=seq(0,128, by=2), StDens=seq(0,128, by=2), TempNum=c(16,20,24,28,32), Replicate = c("A", "B"))
+newData <- newData %>%
+  mutate(TempScale = as.vector(scale(TempNum, center = F, scale = T))) %>%
+  mutate(AeDensScale = as.vector(scale(AeDens, center = F, scale = T))) %>%
+  mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T)))
+
+newData$preds <- predict(AedesSurvivalModel, type = "response", newdata = newData)
+#get means over replicates to plot
+predicted <- newData %>%
+  group_by(TempNum, AeDens, StDens) %>%
+  summarise(preds = mean(preds))
+#remove extrapolation outside of measured range
+predicted$preds[predicted$AeDens+predicted$StDens>128] <- NA  
+
+#plot it
+ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
+  geom_raster(aes(fill=preds))+
+  geom_contour(color="gray90")+
+  theme_minimal()+
+  scale_fill_viridis(name="Prop. Emerged")+
+  facet_wrap(~TempNum, ncol = 5) +
+  xlab("Stephensi Density") +
+  ylab("Aegypti Density")
+```
+
+## Stephensi
+
+```{r}
+#stephensi
+stSurvival <- emergenceData %>%
+  filter(Species == "Stephensi" & StDens!= 0 & Sex == "Female") %>%
+  group_by(Replicate, Temp, TempNum, AeDens, StDens, Ratio) %>%
+  summarise(success = sum(Number, na.rm = T)) %>%
+  mutate(failure = (StDens/2) - success) %>%
+  ungroup() %>%
+  #rescale predictor variables
+  mutate(TempScale = as.vector(scale(TempNum, center = F, scale = T))) %>%
+  mutate(AeDensScale = as.vector(scale(AeDens, center = F, scale = T))) %>%
+  mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T)))
+#for when more than 50% were female
+stSurvival$failure[stSurvival$failure<0] <- 0
+```
+
+Stephensi model selection
+```{r}
+m0 <- glmer(cbind(success, failure) ~ 1 + (1|Replicate),
+                   data = stSurvival,
+                   family = binomial(link = "logit"))
+m1 <- glmer(cbind(success, failure) ~ StDensScale + (1|Replicate),
+                   data = stSurvival,
+                   family = binomial(link = "logit"))
+m2 <- glmer(cbind(success, failure) ~ StDensScale + TempScale + (1|Replicate),
+                   data = stSurvival,
+                   family = binomial(link = "logit"))
+m3 <- glmer(cbind(success, failure) ~ StDensScale + poly(TempScale,2) + (1|Replicate),
+                   data = stSurvival,
+                   family = binomial(link = "logit"))
+m4 <- glmer(cbind(success, failure) ~ StDensScale*poly(TempScale,2) + (1|Replicate),
+                   data = stSurvival,
+                   family = binomial(link = "logit"))
+
+m5 <- glmer(cbind(success, failure) ~ StDensScale + poly(TempScale,2) + AeDensScale + (1|Replicate),
+                   data = stSurvival,
+                   family = binomial(link = "logit"))
+
+m6 <- glmer(cbind(success, failure) ~ StDensScale + poly(TempScale,2) * AeDensScale + (1|Replicate),
+                   data = stSurvival,
+                   family = binomial(link = "logit"))
+
+m7 <- glmer(cbind(success, failure) ~ StDensScale + poly(TempScale,2) + AeDensScale + TempScale:StDensScale + (1|Replicate),
+                   data = stSurvival,
+                   family = binomial(link = "logit"))
+
+modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"), 
+                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7), broom::glance)),
+                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
+                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
+modelSummary
+
+anova(m6,m7)
+
+StephSurvivalModel <- m7
+```
+
+For stephensi, model m6 is the best fit (survival ~ AeDens + Temp^2*StDens)
+
+```{r}
+plot(StephSurvivalModel, id = 0.01, idLabels=~.obs)
+qqnorm(resid(StephSurvivalModel))
+qqline(resid(StephSurvivalModel), col = "red")
+
+stSurvival$preds <- predict(StephSurvivalModel)
+stSurvival$resids <- resid(StephSurvivalModel)
+
+ggplot(data = stSurvival, aes(x=factor(StDens), y = resids))+
+  geom_boxplot() +
+  geom_line(aes(y=0), color="red") +
+  theme_base()
+
+ggplot(data = stSurvival, aes(x=factor(AeDens), y = resids))+
+  geom_boxplot() +
+  theme_base()
+
+ggplot(data = stSurvival, aes(x=Temp, y = resids))+
+  geom_boxplot() +
+  theme_base()
+
+ggplot(data = stSurvival, aes(x=Replicate, y = resids))+
+  geom_boxplot() +
+  theme_base()
+
+```
+
+The residuals on this model look very bad. Not sure what to do.
+
+Now we can predict over the response surface.
+
+```{r}
+#heatmap plots
+newData <- expand.grid(AeDens=seq(0,128, by=2), StDens=seq(0,128, by=2), TempNum=c(16,20,24,28,32), Replicate = c("A", "B"))
+newData <- newData %>%
+  mutate(TempScale = as.vector(scale(TempNum, center = F, scale = T))) %>%
+  mutate(AeDensScale = as.vector(scale(AeDens, center = F, scale = T))) %>%
+  mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T)))
+
+newData$preds <- predict(StephSurvivalModel, type = "response", newdata = newData)
+#get means over replicates to plot
+predicted <- newData %>%
+  group_by(TempNum, AeDens, StDens) %>%
+  summarise(preds = mean(preds))
+#remove extrapolation outside of measured range
+predicted$preds[predicted$AeDens+predicted$StDens>128] <- NA  
+
+#plot it
+ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
+  geom_raster(aes(fill=preds))+
+  geom_contour(color="gray90")+
+  theme_minimal()+
+  scale_fill_viridis(name="Prop. Emerged")+
+  facet_wrap(~TempNum, ncol = 5) +
+  xlab("Stephensi Density") +
+  ylab("Aegypti Density")
+```
+
+
+# Fecundity
+
+# Growth Rate
+
+
