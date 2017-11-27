@@ -71,6 +71,8 @@ modExp <- gls(WCI ~ MAP + FIRE,
 
 plot(Variogram(modExp, resType = "n", form = ~XScaled + YScaled), main = "Exponential")
 
+plot(Variogram(modExp, form = ~XScaled + YScaled)) #this doesn't take into account the autocorrelation (need resType = "n" to do that)
+
 (anova(mod1, modExp))
 ```
 
@@ -139,8 +141,8 @@ diag(distance) <- NA
 
 #based on thinning algorithm from 'spThin' package
 treeThin <- treeData
-while(min(distance, na.rm = T) < 1 & nrow(treeThin) > 1){ #loop until each one is gone
-  nearNb <- which(distance < 1.3, arr.ind = T)[,1]
+while(min(distance, na.rm = T) < 0.05 & nrow(treeThin) > 1){ #loop until each one is gone
+  nearNb <- which(distance < 0.05, arr.ind = T)[,1]
    #drop that point which is closest to the most points
   toRemove <- as.numeric(names(which(table(nearNb) == max(table(nearNb)))))
   if (length(toRemove) > 1){
