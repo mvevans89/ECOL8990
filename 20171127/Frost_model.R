@@ -1,6 +1,6 @@
 # model for Frost JAGS model
 
-# Model3: ALIVE2013 ~ EMEAN
+# Model: FROST ~ DIAM + 1|PLOT
 
 model{
   #priors
