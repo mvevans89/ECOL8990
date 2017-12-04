@@ -544,15 +544,132 @@ GrowthAedes <- GrowthAedes %>%
   mutate(D=14) %>%
   ungroup() %>%
   mutate(r=(log((1/N0)*Axfwx))/(D+(xAxfwx/Axfwx))) %>%
-  group_by(Replicate, Temp, Ratio, AeDens, StDens, Species) %>%
+  group_by(Replicate, Temp, TempNum, Ratio, AeDens, StDens, Species) %>%
   #each row is now a duplicate of the same thing so only need the first one
   slice(1) %>%
-  mutate(lambda=exp(r)) 
+  mutate(lambda=exp(r)) %>%
+  ungroup() %>%
+    #rescale predictor variables
+  mutate(TempScale = as.vector(scale(TempNum, center = F, scale = T))) %>%
+  mutate(AeDensScale = as.vector(scale(AeDens, center = F, scale = T))) %>%
+  mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T))) %>%
+  #drop jar that was all male
+  filter(!(Replicate == "A" & Temp == "24" & Ratio == "8:24")) %>%
+  #drop unneccesary columns
+  dplyr::select(-x, -Ax, - Sex, - N0, -fwx, - Axfwx, - xAxfwx, -D)
 ```
 
+```{r}
+ggplot(data =  GrowthAedes, aes(x = AeDens, y = lambda, color = Temp)) +
+  geom_point() +
+  geom_smooth()
+```
 
+Model Selection
 
+```{r}
+m0 <- glmer(lambda ~ 1 + (1|Replicate),
+                   data = GrowthAedes,
+                   family = gaussian)
 
+m1 <- glmer(lambda ~ poly(TempScale,2) + (1|Replicate),
+                   data = GrowthAedes,
+                   family = gaussian)
+
+m2 <- glmer(lambda ~ AeDensScale + (1|Replicate),
+                   data = GrowthAedes,
+                   family = gaussian)
+
+m3 <- glmer(lambda ~ poly(AeDensScale,2)+ (1|Replicate),
+                   data = GrowthAedes,
+                   family = gaussian)
+
+m4 <- glmer(lambda ~ AeDensScale + poly(TempScale,2) + (1|Replicate),
+                   data = GrowthAedes,
+                   family = gaussian)
+
+m5 <- glmer(lambda ~ AeDensScale + poly(TempScale,2) + StDensScale + (1|Replicate),
+                   data = GrowthAedes,
+                   family = gaussian)
+
+m6 <- glmer(lambda ~ AeDensScale*TempScale+ (1|Replicate),
+                   data = GrowthAedes,
+                   family = gaussian)
+
+m7 <- glmer(lambda ~ poly(AeDensScale,2) + poly(TempScale,2) + (1|Replicate),
+                   data = GrowthAedes,
+                   family = gaussian)
+
+```
+
+```{r}
+modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"), 
+                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7), broom::glance)),
+                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
+                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
+modelSummary
+
+AedesGrowthModel <- m7
+```
+
+```{r}
+summary(AedesGrowthModel)
+confint(AedesGrowthModel)
+```
+
+```{r}
+plot(AedesGrowthModel, id = 0.01, idLabels=~.obs)
+qqnorm(resid(AedesGrowthModel))
+qqline(resid(AedesGrowthModel), col = "red")
+
+GrowthAedes$preds <- predict(AedesGrowthModel)
+GrowthAedes$resids <- resid(AedesGrowthModel)
+
+ggplot(data = GrowthAedes, aes(x=StDens, y = resids))+
+  geom_point() +
+  geom_smooth(se=T)+
+  theme_base()
+
+ggplot(data = GrowthAedes, aes(x=AeDens, y = resids))+
+  geom_point() +
+  geom_smooth(se=T)+
+  theme_base()
+
+ggplot(data = GrowthAedes, aes(x=TempNum, y = resids))+
+  geom_point() +
+  geom_smooth(se=T)+
+  theme_base()
+
+```
+
+Create heatmaps of the growth:
+
+```{r}
+#heatmap plots
+newData <- expand.grid(AeDens=seq(0,128, by=2), StDens=seq(0,128, by=2), TempNum=c(16,20,24,28,32), Replicate = c("A", "B"))
+newData <- newData %>%
+  mutate(TempScale = as.vector(scale(TempNum, center = F, scale = T))) %>%
+  mutate(AeDensScale = as.vector(scale(AeDens, center = F, scale = T))) %>%
+  mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T)))
+
+newData$preds <- predict(AedesGrowthModel, type = "response", newdata = newData)
+#get means over replicates to plot
+predicted <- newData %>%
+  group_by(TempNum, AeDens, StDens) %>%
+  summarise(preds = mean(preds))
+#remove extrapolation outside of measured range
+predicted$preds[predicted$AeDens+predicted$StDens>128] <- NA  
+
+#plot it
+ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
+  geom_raster(aes(fill=preds))+
+  geom_contour(color="gray90")+
+  theme_minimal()+
+  scale_fill_viridis(name="Growth Rate")+
+  facet_wrap(~TempNum, ncol = 5) +
+  xlab("Stephensi Density") +
+  ylab("Aegypti Density") 
+```
 
 
 
