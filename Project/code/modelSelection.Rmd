@@ -35,7 +35,7 @@ This document goes through model selection for each analysis section of the ms.
 
 ## Aedes
 
-Survival (or prob. of emergence) is a binary variable per individual mosquito. I use a generalized linear mixed model to explore the effect of Aedes density, Stephensi density, and temperature on emergence, with replicate as a random intercept. The data is subset to that of females (this can differ as males tend to develop more quickly and will emerge first). Predictor variables are scaled.
+Survival (or prob. of emergence) is a binary variable per individual mosquito. I use a generalized linear mixed model to explore the effect of Aedes density, Stephensi density, and temperature on emergence, with replicate as a random intercept. The data is subset to that of females (this can differ as males tend to develop more quickly and will emerge first). Predictor variables are normalized/scaled.
 
 Reformat data into successes and failures per jar.
 ```{r format survival data}
@@ -64,34 +64,38 @@ m0 <- glmer(cbind(success, failure) ~ 1 + (1|Replicate),
 m1 <- glmer(cbind(success, failure) ~ AeDensScale + (1|Replicate),
                    data = aeSurvival,
                    family = binomial(link = "logit"))
-m2 <- glmer(cbind(success, failure) ~ AeDensScale + TempScale + (1|Replicate),
+m2 <- glmer(cbind(success, failure) ~ AeDensScale + TempNum + (1|Replicate),
                    data = aeSurvival,
                    family = binomial(link = "logit"))
-m3 <- glmer(cbind(success, failure) ~ AeDensScale + poly(TempScale,2) + (1|Replicate),
+m3 <- glmer(cbind(success, failure) ~ AeDensScale + poly(TempNum,2) + (1|Replicate),
                    data = aeSurvival,
                    family = binomial(link = "logit"))
-m4 <- glmer(cbind(success, failure) ~ AeDensScale*poly(TempScale,2) + (1|Replicate),
-                   data = aeSurvival,
-                   family = binomial(link = "logit"))
-
-m5 <- glmer(cbind(success, failure) ~ AeDensScale + poly(TempScale,2) + StDensScale + (1|Replicate),
+m4 <- glmer(cbind(success, failure) ~ AeDensScale*poly(TempNum,2) + (1|Replicate),
                    data = aeSurvival,
                    family = binomial(link = "logit"))
 
-m6 <- glmer(cbind(success, failure) ~ AeDensScale + poly(TempScale,2) * StDensScale + (1|Replicate),
+m5 <- glmer(cbind(success, failure) ~ AeDensScale + poly(TempNum,2) + StDensScale + (1|Replicate),
                    data = aeSurvival,
                    family = binomial(link = "logit"))
 
-m7 <- glmer(cbind(success, failure) ~ AeDensScale + poly(TempScale,2) + StDensScale + TempScale:StDensScale + (1|Replicate),
+m6 <- glmer(cbind(success, failure) ~ AeDensScale + poly(TempNum,2) * StDensScale + (1|Replicate),
                    data = aeSurvival,
                    family = binomial(link = "logit"))
 
-modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"), 
-                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7), broom::glance)),
-                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
-                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
+m7 <- glmer(cbind(success, failure) ~ AeDensScale + poly(TempNum,2) + StDensScale + TempNum:StDensScale + (1|Replicate),
+                   data = aeSurvival,
+                   family = binomial(link = "logit"))
+
+m8 <- glmer(cbind(success, failure) ~ AeDensScale*poly(TempNum,2) + StDensScale*poly(TempNum,2) + (1|Replicate),
+                   data = aeSurvival,
+                   family = binomial(link = "logit"))
+
+modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7" , "m8"), 
+                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7, m8), broom::glance)),
+                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7, m8), 
+                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7, m8)))
 modelSummary
-anova(m6,m7)
+anova(m6,m7, m8)
 
 AedesSurvivalModel <- m7
 
@@ -220,7 +224,7 @@ anova(m6,m7)
 StephSurvivalModel <- m7
 ```
 
-For stephensi, model m6 is the best fit (survival ~ AeDens + Temp^2*StDens)
+For stephensi, model m7 is the best fit (survival ~ AeDens + Temp^2 + StDens + Temp^2*StDens)
 
 ```{r}
 plot(StephSurvivalModel, id = 0.01, idLabels=~.obs)
@@ -282,6 +286,123 @@ ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
 
 
 # Fecundity
+
+Split into Two Dataframes. Do not include those that didn't lay eggs, as this can be for lots of reasons.
+
+```{r}
+aeFec <- dplyr::filter(fecundity, Species == "Aedes" & !is.na(Eggs))
+```
+
+
+## Aedes
+
+Model Selection
+
+```{r}
+m0 <- glmer(Eggs ~ 1 + (1|Replicate),
+                   data = aeFec,
+                   family = gaussian)
+
+m1 <- glmer(Eggs ~ TempNum + (1|Replicate),
+                   data = aeFec,
+                   family = gaussian)
+
+m2 <- glmer(Eggs ~ AeDens + (1|Replicate),
+                   data = aeFec,
+                   family = gaussian)
+
+m3 <- glmer(Eggs ~ StDens + (1|Replicate),
+                   data = aeFec,
+                   family = gaussian)
+
+m4 <- glmer(Eggs ~ AeDens + TempNum + (1|Replicate),
+                   data = aeFec,
+                   family = gaussian)
+
+m5 <- glmer(Eggs ~ AeDens + poly(TempNum,2) + StDens + (1|Replicate),
+                   data = aeFec,
+                   family = gaussian)
+
+m6 <- glmer(Eggs ~ AeDens*TempNum*StDens + (1|Replicate),
+                   data = aeFec,
+                   family = gaussian)
+
+m7 <- glmer(Eggs ~ AeDens*TempNum + StDens*TempNum + (1|Replicate),
+                   data = aeFec,
+                   family = gaussian)
+
+```
+
+```{r}
+modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"), 
+                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7), broom::glance)),
+                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
+                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
+modelSummary
+anova(m4, m5,m6, m7)
+
+AedesFecundityModel <- m5
+
+```
+
+The best fitting model is m5 (AeDens + TempNum +StDens).
+
+```{r}
+plot(AedesFecundityModel, id = 0.01, idLabels=~.obs)
+qqnorm(resid(AedesFecundityModel))
+qqline(resid(AedesFecundityModel), col = "red")
+
+aeFec$preds <- predict(AedesFecundityModel)
+aeFec$resids <- resid(AedesFecundityModel)
+
+ggplot(data = aeFec, aes(x=StDens, y = resids))+
+  geom_point() +
+  geom_smooth(se=T)+
+  theme_base()
+
+ggplot(data = aeFec, aes(x=AeDens, y = resids))+
+  geom_point() +
+  geom_smooth(se=T)+
+  theme_base()
+
+ggplot(data = aeFec, aes(x=TempNum, y = resids))+
+  geom_point() +
+  geom_smooth(se=T)+
+  theme_base()
+```
+
+Create heatmaps of the eggs:
+
+```{r}
+#heatmap plots
+newData <- expand.grid(AeDens=seq(0,128, by=2), StDens=seq(0,128, by=2), TempNum=c(16,20,24,28,32), Replicate = c("A", "B"))
+newData <- newData %>%
+  mutate(TempScale = as.vector(scale(TempNum, center = F, scale = T))) %>%
+  mutate(AeDensScale = as.vector(scale(AeDens, center = F, scale = T))) %>%
+  mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T)))
+
+newData$preds <- predict(AedesFecundityModel, type = "response", newdata = newData)
+#get means over replicates to plot
+predicted <- newData %>%
+  group_by(TempNum, AeDens, StDens) %>%
+  summarise(preds = mean(preds))
+#remove extrapolation outside of measured range
+predicted$preds[predicted$AeDens+predicted$StDens>128] <- NA  
+
+#plot it
+ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
+  geom_raster(aes(fill=preds))+
+  geom_contour(color="gray90")+
+  theme_minimal()+
+  scale_fill_viridis(name="Number of Eggs Laid")+
+  facet_wrap(~TempNum, ncol = 5) +
+  xlab("Stephensi Density") +
+  ylab("Aegypti Density")
+```
+
+## Stephensi
+
+
 
 # Growth Rate
 
