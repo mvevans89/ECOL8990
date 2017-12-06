@@ -376,9 +376,10 @@ confint(AedesFecundityModel)
 
 
 ```{r}
-plot(AedesFecundityModel, id = 0.01, idLabels=~.obs)
-qqnorm(resid(AedesFecundityModel))
-qqline(resid(AedesFecundityModel), col = "red")
+#plot(AedesFecundityModel, id = 0.01, idLabels=~.obs)
+plot(fitted(AedesFecundityModel), residuals(AedesFecundityModel))
+# qqnorm(resid(AedesFecundityModel))
+# qqline(resid(AedesFecundityModel), col = "red")
 
 aeFec$preds <- predict(AedesFecundityModel)
 aeFec$resids <- resid(AedesFecundityModel)
@@ -399,7 +400,7 @@ ggplot(data = aeFec, aes(x=TempNum, y = resids))+
   theme_base()
 ```
 
-Create heatmaps of the eggs:
+Create heatmaps of the eggs. If there are only two covariates, can do a 3D surface plot.
 
 ```{r}
 #heatmap plots
@@ -430,6 +431,13 @@ ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
 
 ## Stephensi
 
+There are too many zeros in this for the zero-inflated model to work. 
+
+```{r}
+stFec <- dplyr::filter(fecundity, Species == "Stephensi" & !is.na(Eggs))
+```
+
+
 Model Selection
 
 ```{r}
@@ -453,18 +461,17 @@ m4 <- glmer(Eggs ~ AeDens + TempNum + (1|Replicate),
                    data = stFec,
                    family = gaussian)
 
-m5 <- glmer(Eggs ~ AeDens + poly(TempNum,2) + StDens + (1|Replicate),
+m5 <- glmer(Eggs ~ AeDens + poly(TempNum,2) + (1|Replicate),
                    data = stFec,
                    family = gaussian)
 
-m6 <- glmer(Eggs ~ AeDens*TempNum*StDens + (1|Replicate),
+m6 <- glmer(Eggs ~ AeDens*poly(TempNum,2) + (1|Replicate),
                    data = stFec,
                    family = gaussian)
 
-m7 <- glmer(Eggs ~ AeDens*TempNum + StDens*TempNum + (1|Replicate),
+m7 <- glmer(Eggs ~ (AeDens + StDens)*TempNum + (1|Replicate),
                    data = stFec,
                    family = gaussian)
-
 ```
 
 ```{r}
@@ -474,9 +481,10 @@ modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"),
                    AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
 modelSummary
 
-StephensiFecundityModel <- m5
+StephensiFecundityModel <- m6
 ```
 
+The best fitting model is (Aedes*Temp^2), however none of these covariates are significant (i.e. their confidence intervals overlap 0). So Stephensi fecundity is not affected by inter or intraspecific densities or temperature, but note that this may also be because of the small sample size.
 
 ```{r}
 summary(StephensiFecundityModel)
@@ -490,6 +498,8 @@ qqline(resid(StephensiFecundityModel), col = "red")
 
 stFec$preds <- predict(StephensiFecundityModel)
 stFec$resids <- resid(StephensiFecundityModel)
+
+hist(stFec$resids)
 
 ggplot(data = stFec, aes(x=StDens, y = resids))+
   geom_point() +
@@ -517,7 +527,7 @@ newData <- newData %>%
   mutate(AeDensScale = as.vector(scale(AeDens, center = F, scale = T))) %>%
   mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T)))
 
-newData$preds <- predict(StephensiFecundityModel, type = "response", newdata = newData)
+newData$preds <- predict(m0, type = "response", newdata = newData)
 #get means over replicates to plot
 predicted <- newData %>%
   group_by(TempNum, AeDens, StDens) %>%
@@ -584,6 +594,10 @@ GrowthAedes <- GrowthAedes %>%
 ggplot(data =  GrowthAedes, aes(x = AeDens, y = lambda, color = Temp)) +
   geom_point() +
   geom_smooth()
+
+ggplot(data =  GrowthAedes, aes(x = Temp, y = lambda, color = AeDens)) +
+  geom_point() +
+  geom_smooth()
 ```
 
 Model Selection
@@ -647,6 +661,8 @@ qqline(resid(AedesGrowthModel), col = "red")
 GrowthAedes$preds <- predict(AedesGrowthModel)
 GrowthAedes$resids <- resid(AedesGrowthModel)
 
+hist(GrowthAedes$resids)
+
 ggplot(data = GrowthAedes, aes(x=StDens, y = resids))+
   geom_point() +
   geom_smooth(se=T)+
@@ -664,7 +680,7 @@ ggplot(data = GrowthAedes, aes(x=TempNum, y = resids))+
 
 ```
 
-Create heatmaps of the growth:
+Create heatmaps of the growth. Ditto 3D surface above:
 
 ```{r}
 #heatmap plots
@@ -729,12 +745,14 @@ GrowthStephensi <- GrowthStephensi %>%
 
 # NAs are truly zeros
 GrowthStephensi$lambda[is.na(GrowthStephensi$lambda)] <- 0  
-
-  
 ```
 
 ```{r}
 ggplot(data =  GrowthStephensi, aes(x = StDens, y = lambda, color = Temp)) +
+  geom_point() +
+  geom_smooth(se = F)
+
+ggplot(data =  GrowthStephensi, aes(x = Temp, y = lambda, color = StDens)) +
   geom_point() +
   geom_smooth(se = F)
 ```
@@ -785,6 +803,9 @@ modelSummary
 
 StephensiGrowthModel <- m5
 ```
+
+This results in some not-right residuals becuase of all the zeros. Becuase of this, we will try to impliment a hurdle model (http://seananderson.ca/2014/05/18/gamma-hurdle.html).
+
 
 
 ```{r}
