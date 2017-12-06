@@ -1,7 +1,7 @@
 ---
 title: "Final Project"
 author: "Michelle Evans"
-date: "November 20, 2017"
+date: ""
 output: pdf_document
 bibliography: references.bib
 ---
@@ -12,6 +12,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 # Introduction
+
+The frequency of infectious disease emergence has been increasing since the mid-20th century. Incidence of vector borne diseases, specifically, have increased over 25% over the past decade [@jones2008], with notable recent outbreaks such as Zika and chikungunya. One potential driver of this increase is land-use change, such as agricultural intensification and urbanization [@gottdenker2014, @jones2013]. Urbanization can cause increases in vector-borne disease through changes to mosquito habitat and environmental conditions. For container breeding species such as *Aedes aegypti*, the primary vector of dengue and yellow fever, urbanization increases the amount of habitat available for breeding [@zahouli2017, @li2014]. Further, urbanization can alter the microclimate of the environment through the urban heat island effect. Mosquitoes, being small ectotherms, are extremely susceptible to changes in temperature, which can have significant WORD on life history traits relevant to demography and disease transmission [@murdock2017, @paaijmans2009]. The majority of past work has focused on the abiotic effects of urbanization, ignoring changes to biotic factors such as community composition and larval densities.  However, these biotic factors may be especially strong as local scales [@cohenYEAR], and have been shown to impact mosquitoes (alto papers??), and may interact with abiotic facto. Therefore, the interaction of biotic and abiotic effects on mosquito population dynamics is still relatively unexplored.
+
+Next paragraph goes further and identifies a system in which we think this could be playing a major role in disease outcomes
+
+The major vectors of arboviruses tend to be container breeding species, which often cohabit in containers with other mosquito species, leading to strong control via density-dependence and interspecific competition (some alto papers). For example, list all the aegypti vs. albopictus stuff and how this effects populations and disease. Not all co-habitating species, however, also share pathogens, further complicating stuff. In urban India, for example, Anopheles stephensi, the primary vector of urban malaria, is often found cohabiting with Aedes aegypti, the primary vector of dengue. SENTENCE ABOUT CYCLICAL NATURE OF DISEASE (Olivier Telle paper, maybe something else). This seasonality of disease has been hypothesized to be tied to outcomes of competition, however, no one knows how these species interact, and how this interaction may change across season, given thermal preferences and all that.
+
+Here, we explore the interactive effects of interspecific competition, intraspecific competition, and temperature on the population growth of two co-habiting mosquito species, Aedes aegypti and Anopheles stephensi, using a laboratory model system to parameterize demographic life history traits and ultimately calculate population grwoth rates. By comparing these populatoin growth rates of individual species under WORD scenarios, we then construct phase-plane WORD to investigate the expected outcome of each regime, allowing us the compare the relative importance of abiotic and biotic factors on mosquito population dynamics.
 
 # Materials/Methods
 
