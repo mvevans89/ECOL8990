@@ -20,6 +20,7 @@ library(viridis)
 library(nlme)
 library(lme4)
 library(MuMIn)
+library(glmmADMB)
 ```
 
 ```{r}
@@ -287,62 +288,81 @@ ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
 
 # Fecundity
 
-Split into Two Dataframes. Do not include those that didn't lay eggs, as this can be for lots of reasons.
+Split into Two Dataframes. Change the NAs of those that didn't lay to 0.
 
 ```{r}
-aeFec <- dplyr::filter(fecundity, Species == "Aedes" & !is.na(Eggs))
-stFec <- dplyr::filter(fecundity, Species == "Stephensi" & !is.na(Eggs))
+aeFec <- dplyr::filter(fecundity, Species == "Aedes")
+aeFec$Eggs[is.na(aeFec$Eggs)] <- 0
+stFec <- dplyr::filter(fecundity, Species == "Stephensi")
+stFec$Eggs[is.na(stFec$Eggs)] <- 0
 ```
 
+
+We will use a zero-inflated mixed model here from the `glmmADMB` package because we have many zeros, and this drastically improved model fit during preliminary explorations. Note that these models take a long time to run.
 
 ## Aedes
 
 Model Selection
 
-```{r}
-m0 <- glmer(Eggs ~ 1 + (1|Replicate),
+```{r, warning = F}
+m0 <- glmmadmb(Eggs ~ 1 + (1|Replicate),
                    data = aeFec,
-                   family = gaussian)
+                    zeroInflation=TRUE, 
+                    family="nbinom")
 
-m1 <- glmer(Eggs ~ TempNum + (1|Replicate),
+m1 <- glmmadmb(Eggs ~ TempNum + (1|Replicate),
                    data = aeFec,
-                   family = gaussian)
+                    zeroInflation=TRUE, 
+                    family="nbinom")
 
-m2 <- glmer(Eggs ~ AeDens + (1|Replicate),
+m2 <- glmmadmb(Eggs ~ AeDens + (1|Replicate),
                    data = aeFec,
-                   family = gaussian)
+                    zeroInflation=TRUE, 
+                    family="nbinom")
 
-m3 <- glmer(Eggs ~ StDens + (1|Replicate),
+m3 <- glmmadmb(Eggs ~ AeDens + StDens + (1|Replicate),
                    data = aeFec,
-                   family = gaussian)
+                    zeroInflation=TRUE, 
+                    family="nbinom")
 
-m4 <- glmer(Eggs ~ AeDens + TempNum + (1|Replicate),
+m4 <- glmmadmb(Eggs ~ AeDens + TempNum + (1|Replicate),
                    data = aeFec,
-                   family = gaussian)
+                    zeroInflation=TRUE, 
+                    family="nbinom")
 
-m5 <- glmer(Eggs ~ AeDens + poly(TempNum,2) + StDens + (1|Replicate),
-                   data = aeFec,
-                   family = gaussian)
+m5 <- glmmadmb(Eggs ~ AeDens + poly(TempNum,2) + (1|Replicate),
+                  data = aeFec,
+                    zeroInflation=TRUE, 
+                    family="nbinom")
 
-m6 <- glmer(Eggs ~ AeDens*TempNum*StDens + (1|Replicate),
-                   data = aeFec,
-                   family = gaussian)
+#best model with no 
+m5old <- glmer(Eggs ~ AeDens + poly(TempNum,2) + (1|Replicate),
+                  data = aeFec,
+                  family=gaussian)
 
-m7 <- glmer(Eggs ~ AeDens*TempNum + StDens*TempNum + (1|Replicate),
+m6 <- glmmadmb(Eggs ~ AeDens*poly(TempNum,2) + (1|Replicate),
                    data = aeFec,
-                   family = gaussian)
+                    zeroInflation=TRUE, 
+                    family="nbinom")
+
+m7 <- glmmadmb(Eggs ~ AeDens*TempNum + (1|Replicate),
+                   data = aeFec,
+                    zeroInflation=TRUE, 
+                    family="nbinom")
 
 ```
 
 ```{r}
 modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"), 
-                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7), broom::glance)),
+                   logLik = logLik(m0, m1, m2, m3, m4, m5, m6, m7),
+                   AIC = AIC(m0, m1, m2, m3, m4, m5, m6, m7),
                    AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
                    AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
 modelSummary
 anova(m4, m5,m6, m7)
 
 AedesFecundityModel <- m5
+#AedesFecundityModel <- m5old
 
 ```
 
@@ -489,7 +509,7 @@ ggplot(data = stFec, aes(x=TempNum, y = resids))+
 
 Create heatmaps of the eggs:
 
-```{r}
+```{r, include = F}
 #heatmap plots
 newData <- expand.grid(AeDens=seq(0,128, by=2), StDens=seq(0,128, by=2), TempNum=c(16,20,24,28,32), Replicate = c("A", "B"))
 newData <- newData %>%
@@ -522,7 +542,8 @@ Growth rate calculated via Sugihara based on raw data.
 
 ## Aedes
 
-Calculate growth rate. Using raw data except for fecundity (since this was only estimated from a subset). Fecundity is estimated using models above.
+Calculate growth rate. Using raw data except for fecundity (since this was only estimated from a subset). Fecundity is estimated using models above. In the case of stephensi, it is just the mean across all treatments, since none of our covariates were significant.
+
 ```{r}
 # only need female emergence
 GrowthAedes <- emergenceData %>%
@@ -530,8 +551,8 @@ GrowthAedes <- emergenceData %>%
   #assume 50% female
   mutate(N0 = AeDens/2) %>%
   rename(x = Day, Ax = Number) %>%
-  #drop those when no emerged since we will be summing
-  filter(!is.na(Ax) & Ax>0) 
+  #don't calculate for ones that had no aedes to begin with
+  filter(AeDens>0) 
 
 #add in predicted fecundity
 GrowthAedes$fwx <- predict(AedesFecundityModel, type = "response", newdata = GrowthAedes)
@@ -540,7 +561,7 @@ GrowthAedes$fwx <- predict(AedesFecundityModel, type = "response", newdata = Gro
 GrowthAedes <- GrowthAedes %>%
   mutate(Axfwx = Ax*fwx, xAxfwx = x*Ax*fwx) %>%
   group_by(Replicate, Temp, Ratio, TempNum, AeDens, StDens) %>%
-  mutate_at(c("Axfwx", "xAxfwx"), sum) %>%
+  mutate_at(c("Axfwx", "xAxfwx"), sum, na.rm=T) %>%
   mutate(D=14) %>%
   ungroup() %>%
   mutate(r=(log((1/N0)*Axfwx))/(D+(xAxfwx/Axfwx))) %>%
@@ -608,6 +629,7 @@ modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"),
                    AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
                    AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
 modelSummary
+anova(m4, m7)
 
 AedesGrowthModel <- m7
 ```
@@ -671,5 +693,126 @@ ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
   ylab("Aegypti Density") 
 ```
 
+## Stephensi
+
+```{r}
+# only need female emergence
+GrowthStephensi <- emergenceData %>%
+  filter(Species =="Stephensi" & Sex == "Female") %>%
+  #assume 50% female
+  mutate(N0 = StDens/2) %>%
+  rename(x = Day, Ax = Number)  %>%
+  filter(StDens>0)
+
+#add in predicted fecundity based on overall mean since model had no significance
+GrowthStephensi$fwx <- mean(fecundity$Eggs[fecundity$Species == "Stephensi"], na.rm = T)
+
+#calculate overall per capita growth rate
+GrowthStephensi <- GrowthStephensi %>%
+  mutate(Axfwx = Ax*fwx, xAxfwx = x*Ax*fwx) %>%
+  group_by(Replicate, Temp, Ratio, TempNum, AeDens, StDens) %>%
+  mutate_at(c("Axfwx", "xAxfwx"), sum, na.rm=T) %>%
+  mutate(D=14) %>%
+  ungroup() %>%
+  mutate(r=(log((1/N0)*Axfwx))/(D+(xAxfwx/Axfwx))) %>%
+  group_by(Replicate, Temp, TempNum, Ratio, AeDens, StDens, Species) %>%
+  #each row is now a duplicate of the same thing so only need the first one
+  slice(1) %>%
+  mutate(lambda=exp(r)) %>%
+  ungroup() %>%
+    #rescale predictor variables
+  mutate(TempScale = as.vector(scale(TempNum, center = F, scale = T))) %>%
+  mutate(AeDensScale = as.vector(scale(AeDens, center = F, scale = T))) %>%
+  mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T))) %>%
+  #drop unneccesary columns
+  dplyr::select(-x, -Ax, - Sex, - N0, -fwx, - Axfwx, - xAxfwx, -D)
+
+# NAs are truly zeros
+GrowthStephensi$lambda[is.na(GrowthStephensi$lambda)] <- 0  
+
+  
+```
+
+```{r}
+ggplot(data =  GrowthStephensi, aes(x = StDens, y = lambda, color = Temp)) +
+  geom_point() +
+  geom_smooth(se = F)
+```
+
+Model Selection
+
+```{r}
+m0 <- glmer(lambda ~ 1 + (1|Replicate),
+                   data = GrowthStephensi,
+                   family = gaussian)
+
+m1 <- glmer(lambda ~ poly(TempScale,2) + (1|Replicate),
+                   data = GrowthStephensi,
+                   family = gaussian)
+
+m2 <- glmer(lambda ~ AeDensScale + (1|Replicate),
+                   data = GrowthStephensi,
+                   family = gaussian)
+
+m3 <- glmer(lambda ~ poly(AeDensScale,2)+ (1|Replicate),
+                   data = GrowthStephensi,
+                   family = gaussian)
+
+m4 <- glmer(lambda ~ AeDensScale + poly(TempScale,2) + (1|Replicate),
+                   data = GrowthStephensi,
+                   family = gaussian)
+
+m5 <- glmer(lambda ~ AeDensScale + poly(TempScale,2) + StDensScale + (1|Replicate),
+                   data = GrowthStephensi,
+                   family = gaussian)
+
+m6 <- glmer(lambda ~ AeDensScale*TempScale+ (1|Replicate),
+                   data = GrowthStephensi,
+                   family = gaussian)
+
+m7 <- glmer(lambda ~ poly(AeDensScale,2) + poly(TempScale,2) + (1|Replicate),
+                   data = GrowthStephensi,
+                   family = gaussian)
+
+```
+
+```{r}
+modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"), 
+                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7), broom::glance)),
+                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
+                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
+modelSummary
+
+StephensiGrowthModel <- m5
+```
 
 
+```{r}
+summary(StephensiGrowthModel)
+confint(StephensiGrowthModel)
+```
+
+```{r}
+plot(StephensiGrowthModel, id = 0.01, idLabels=~.obs)
+qqnorm(resid(StephensiGrowthModel))
+qqline(resid(StephensiGrowthModel), col = "red")
+
+GrowthStephensi$preds <- predict(StephensiGrowthModel)
+GrowthStephensi$resids <- resid(StephensiGrowthModel)
+
+ggplot(data = GrowthStephensi, aes(x=StDens, y = resids))+
+  geom_point() +
+  geom_smooth(se=T)+
+  theme_base()
+
+ggplot(data = GrowthStephensi, aes(x=AeDens, y = resids))+
+  geom_point() +
+  geom_smooth(se=T)+
+  theme_base()
+
+ggplot(data = GrowthStephensi, aes(x=TempNum, y = resids))+
+  geom_point() +
+  geom_smooth(se=T)+
+  theme_base()
+
+```
