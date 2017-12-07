@@ -1,7 +1,7 @@
 ---
 title: "Model Selection"
 author: "Michelle Evans"
-date: "11/22/2017"
+date: ""
 output: html_document
 ---
 
@@ -20,6 +20,11 @@ library(viridis)
 library(nlme)
 library(lme4)
 library(MuMIn)
+# install.packages("R2admb")
+# install.packages("glmmADMB", 
+#     repos=c("http://glmmadmb.r-forge.r-project.org/repos",
+#             getOption("repos")),
+#     type="source")
 library(glmmADMB)
 ```
 
@@ -335,11 +340,6 @@ m5 <- glmmadmb(Eggs ~ AeDens + poly(TempNum,2) + (1|Replicate),
                     zeroInflation=TRUE, 
                     family="nbinom")
 
-#best model with no 
-m5old <- glmer(Eggs ~ AeDens + poly(TempNum,2) + (1|Replicate),
-                  data = aeFec,
-                  family=gaussian)
-
 m6 <- glmmadmb(Eggs ~ AeDens*poly(TempNum,2) + (1|Replicate),
                    data = aeFec,
                     zeroInflation=TRUE, 
@@ -362,11 +362,10 @@ modelSummary
 anova(m4, m5,m6, m7)
 
 AedesFecundityModel <- m5
-#AedesFecundityModel <- m5old
 
 ```
 
-The best fitting model is m5 (AeDens + TempNum +StDens).
+The best fitting model is m5 (AeDens + TempNum^2).
 
 ```{r}
 summary(AedesFecundityModel)
@@ -384,19 +383,16 @@ plot(fitted(AedesFecundityModel), residuals(AedesFecundityModel))
 aeFec$preds <- predict(AedesFecundityModel)
 aeFec$resids <- resid(AedesFecundityModel)
 
-ggplot(data = aeFec, aes(x=StDens, y = resids))+
-  geom_point() +
-  geom_smooth(se=T)+
+ggplot(data = aeFec, aes(x = StDens, y = resids, group=StDens))+
+  geom_boxplot() +
   theme_base()
 
-ggplot(data = aeFec, aes(x=AeDens, y = resids))+
-  geom_point() +
-  geom_smooth(se=T)+
+ggplot(data = aeFec, aes(x = AeDens, y = resids, group = AeDens))+
+  geom_boxplot() +
   theme_base()
 
-ggplot(data = aeFec, aes(x=TempNum, y = resids))+
-  geom_point() +
-  geom_smooth(se=T)+
+ggplot(data = aeFec, aes(x = TempNum, y = resids, group = TempNum))+
+  geom_boxplot() +
   theme_base()
 ```
 
@@ -501,19 +497,16 @@ stFec$resids <- resid(StephensiFecundityModel)
 
 hist(stFec$resids)
 
-ggplot(data = stFec, aes(x=StDens, y = resids))+
-  geom_point() +
-  geom_smooth(se = F)+
+ggplot(data = stFec, aes(x = StDens, y = resids, group = StDens))+
+  geom_boxplot() +
   theme_base()
 
-ggplot(data = stFec, aes(x=AeDens, y = resids))+
-  geom_point() +
-  geom_smooth(se = F)+
+ggplot(data = stFec, aes(x = AeDens, y = resids, group = AeDens))+
+  geom_boxplot() +
   theme_base()
 
-ggplot(data = stFec, aes(x=TempNum, y = resids))+
-  geom_point() +
-  geom_smooth(se = F)+
+ggplot(data = stFec, aes(x=TempNum, y = resids, group = TempNum))+
+  geom_boxplot() +
   theme_base()
 ```
 
@@ -598,11 +591,14 @@ ggplot(data =  GrowthAedes, aes(x = AeDens, y = lambda, color = Temp)) +
 ggplot(data =  GrowthAedes, aes(x = Temp, y = lambda, color = AeDens)) +
   geom_point() +
   geom_smooth()
+
+hist((GrowthAedes$lambda))
 ```
 
 Model Selection
 
 ```{r}
+#model selection
 m0 <- glmer(lambda ~ 1 + (1|Replicate),
                    data = GrowthAedes,
                    family = gaussian)
@@ -643,10 +639,12 @@ modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"),
                    AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
                    AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
 modelSummary
-anova(m4, m7)
+anova(m4, m7, m8)
 
 AedesGrowthModel <- m7
 ```
+
+The final model is Aedes^2 + Temp^2.
 
 ```{r}
 summary(AedesGrowthModel)
@@ -663,19 +661,12 @@ GrowthAedes$resids <- resid(AedesGrowthModel)
 
 hist(GrowthAedes$resids)
 
-ggplot(data = GrowthAedes, aes(x=StDens, y = resids))+
-  geom_point() +
-  geom_smooth(se=T)+
+ggplot(data = GrowthAedes, aes(x=AeDens, y = resids, group = AeDens))+
+  geom_boxplot() +
   theme_base()
 
-ggplot(data = GrowthAedes, aes(x=AeDens, y = resids))+
-  geom_point() +
-  geom_smooth(se=T)+
-  theme_base()
-
-ggplot(data = GrowthAedes, aes(x=TempNum, y = resids))+
-  geom_point() +
-  geom_smooth(se=T)+
+ggplot(data = GrowthAedes, aes(x=TempNum, y = resids, group = TempNum))+
+  geom_boxplot() +
   theme_base()
 
 ```
@@ -755,85 +746,176 @@ ggplot(data =  GrowthStephensi, aes(x = StDens, y = lambda, color = Temp)) +
 ggplot(data =  GrowthStephensi, aes(x = Temp, y = lambda, color = StDens)) +
   geom_point() +
   geom_smooth(se = F)
+
+ggplot(data =  GrowthStephensi[GrowthStephensi$lambda>0,], 
+       aes(x = StDens, y = lambda, color = Temp)) +
+  geom_point()
+
+ggplot(data =  GrowthStephensi[GrowthStephensi$lambda>0,], 
+       aes(x = Temp, y = lambda, color = StDens)) +
+  geom_point()
+
 ```
 
 Model Selection
 
+Impliment a [hurdle model](http://seananderson.ca/2014/05/18/gamma-hurdle.html).
+
 ```{r}
-m0 <- glmer(lambda ~ 1 + (1|Replicate),
-                   data = GrowthStephensi,
-                   family = gaussian)
+#create nonzero variable
+GrowthStephensi$nonZero <- ifelse(GrowthStephensi$lambda>0,1,0)
 
-m1 <- glmer(lambda ~ poly(TempScale,2) + (1|Replicate),
-                   data = GrowthStephensi,
-                   family = gaussian)
+plot(GrowthStephensi$StDens, GrowthStephensi$nonZero, pch=20)
+abline(lm(nonZero ~ StDens, data = GrowthStephensi))
 
-m2 <- glmer(lambda ~ AeDensScale + (1|Replicate),
-                   data = GrowthStephensi,
-                   family = gaussian)
+plot(GrowthStephensi$TempNum, GrowthStephensi$nonZero, pch=20)
+abline(lm(nonZero ~ TempNum, data = GrowthStephensi)) #temperature has no effect zero
 
-m3 <- glmer(lambda ~ poly(AeDensScale,2)+ (1|Replicate),
-                   data = GrowthStephensi,
-                   family = gaussian)
+hist(GrowthStephensi$lambda)
+hist(GrowthStephensi$lambda[GrowthStephensi$lambda>0])
+```
 
-m4 <- glmer(lambda ~ AeDensScale + poly(TempScale,2) + (1|Replicate),
-                   data = GrowthStephensi,
-                   family = gaussian)
+Model selection for zero vs. nonzero growth
+```{r}
+m0 <- glmer(nonZero ~ 1 + (1|Replicate),
+            data = GrowthStephensi,
+            family = binomial(link = logit))
 
-m5 <- glmer(lambda ~ AeDensScale + poly(TempScale,2) + StDensScale + (1|Replicate),
-                   data = GrowthStephensi,
-                   family = gaussian)
+m1 <- glmer(nonZero ~ TempScale + (1|Replicate),
+            data = GrowthStephensi,
+            family = binomial(link = logit))
 
-m6 <- glmer(lambda ~ AeDensScale*TempScale+ (1|Replicate),
-                   data = GrowthStephensi,
-                   family = gaussian)
+m2 <- glmer(nonZero ~ AeDensScale + (1|Replicate),
+            data = GrowthStephensi,
+            family = binomial(link = logit))
 
-m7 <- glmer(lambda ~ poly(AeDensScale,2) + poly(TempScale,2) + (1|Replicate),
-                   data = GrowthStephensi,
-                   family = gaussian)
+m3 <- glmer(nonZero ~ StDensScale + (1|Replicate),
+            data = GrowthStephensi,
+            family = binomial(link = logit))
 
+m4 <- glmer(nonZero ~ AeDensScale + StDensScale + (1|Replicate),
+            data = GrowthStephensi,
+            family = binomial(link =logit))
+
+m5 <- glmer(nonZero ~ AeDensScale * StDensScale + (1|Replicate),
+            data = GrowthStephensi,
+            family = binomial(link = logit))
 ```
 
 ```{r}
-modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"), 
-                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7), broom::glance)),
-                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
-                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
+modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5"), 
+                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5), broom::glance)),
+                   AICc = AICc(m0, m1, m2, m3, m4, m5), 
+                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5)))
 modelSummary
 
-StephensiGrowthModel <- m5
+StephensiGrowthModelBin <- m4
 ```
 
-This results in some not-right residuals becuase of all the zeros. Becuase of this, we will try to impliment a hurdle model (http://seananderson.ca/2014/05/18/gamma-hurdle.html).
+Whether or not growth is zero (basically mosquitoes emerge), is dependent on density, not temperature.
 
+Inspect residuals, although this is more important for final hurdle model.
+```{r}
+plot(StephensiGrowthModelBin, id = 0.01, idLabels=~.obs)
+qqnorm(resid(StephensiGrowthModelBin))
+qqline(resid(StephensiGrowthModelBin), col = "red")
+
+GrowthStephensi$predsBin <- predict(StephensiGrowthModelBin)
+GrowthStephensi$residsBin <- resid(StephensiGrowthModelBin)
+
+hist(GrowthStephensi$residsBin)
+
+ggplot(data = GrowthStephensi, aes(x=AeDens, y = residsBin, group = AeDens))+
+  geom_boxplot() +
+  theme_base()
+
+ggplot(data = GrowthStephensi, aes(x=TempNum, y = residsBin, group = TempNum))+
+  geom_boxplot() +
+  theme_base()
+```
+
+Second part of hurdle model for non-zeros
+```{r}
+m0 <- glmer(lambda ~ 1 + (1|Replicate),
+            data = subset(GrowthStephensi, nonZero==1),
+            family = Gamma(link = log))
+
+m1 <- glmer(lambda ~ TempScale + (1|Replicate),
+            data = subset(GrowthStephensi, nonZero==1),
+            family = Gamma(link = log))
+
+m2 <- glmer(lambda ~ AeDensScale + (1|Replicate),
+            data = subset(GrowthStephensi, nonZero==1),
+            family = Gamma(link = log))
+
+m3 <- glmer(lambda ~ StDensScale + (1|Replicate),
+            data = subset(GrowthStephensi, nonZero==1),
+            family = Gamma(link = log))
+
+m4 <- glmer(lambda ~ StDensScale + TempScale + (1|Replicate),
+            data = subset(GrowthStephensi, nonZero==1),
+            family = Gamma(link = log))
+
+m5 <-  glmer(lambda ~ StDensScale * TempScale + (1|Replicate),
+            data = subset(GrowthStephensi, nonZero==1),
+            family = Gamma(link = log))
+```
+
+```{r}
+modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5"), 
+                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5), broom::glance)),
+                   AICc = AICc(m0, m1, m2, m3, m4, m5), 
+                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5)))
+modelSummary
+
+StephensiGrowthModel2 <- m4
+```
+
+Best Model is Temp + StDens
+
+```{r}
+plot(StephensiGrowthModel2, id = 0.01, idLabels=~.obs)
+qqnorm(resid(StephensiGrowthModel2))
+qqline(resid(StephensiGrowthModel2), col = "red")
+
+GrowthStephensi$predsGam[GrowthStephensi$nonZero==1] <- predict(StephensiGrowthModel2)
+GrowthStephensi$residsGam[GrowthStephensi$nonZero==1] <- resid(StephensiGrowthModel2)
+
+hist(GrowthStephensi$resids2)
+
+ggplot(data = GrowthStephensi, aes(x=AeDens, y = residsGam, group = AeDens))+
+  geom_boxplot() +
+  theme_base()
+
+ggplot(data = GrowthStephensi, aes(x=TempNum, y = residsGam, group = TempNum))+
+  geom_boxplot() +
+  theme_base()
+```
 
 
 ```{r}
-summary(StephensiGrowthModel)
-confint(StephensiGrowthModel)
+summary(StephensiGrowthModel2)
+confint(StephensiGrowthModel2)
 ```
+
+Calculate overall prediction of growth rate by back transforming results of two models see https://stats.stackexchange.com/questions/234887/predicting-future-values-with-hurdle-poisson-model , but adjust for gamma
 
 ```{r}
-plot(StephensiGrowthModel, id = 0.01, idLabels=~.obs)
-qqnorm(resid(StephensiGrowthModel))
-qqline(resid(StephensiGrowthModel), col = "red")
+phi_zero <- predict(StephensiGrowthModelBin, newdata = GrowthStephensi, type = "response")
+gammaPreds<- predict(StephensiGrowthModel2, newdata = GrowthStephensi, type = "response")
+#get >0 probability of second model
+phi_count <- pgamma(q = 0, 
+                    shape = 1/sigma(StephensiGrowthModel2)^2,
+                    scale = gammaPreds/2,
+                    log.p = F,
+                    lower.tail = F)
 
-GrowthStephensi$preds <- predict(StephensiGrowthModel)
-GrowthStephensi$resids <- resid(StephensiGrowthModel)
+phi <- phi_zero/phi_count
 
-ggplot(data = GrowthStephensi, aes(x=StDens, y = resids))+
-  geom_point() +
-  geom_smooth(se=T)+
-  theme_base()
+predsAll <- phi * gammaPreds #final prediction over all
 
-ggplot(data = GrowthStephensi, aes(x=AeDens, y = resids))+
-  geom_point() +
-  geom_smooth(se=T)+
-  theme_base()
-
-ggplot(data = GrowthStephensi, aes(x=TempNum, y = resids))+
-  geom_point() +
-  geom_smooth(se=T)+
-  theme_base()
-
+GrowthStephensi$predsFinal <- predsAll
 ```
+
+
+
