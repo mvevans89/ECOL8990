@@ -191,20 +191,32 @@ stSurvival <- emergenceData %>%
 stSurvival$failure[stSurvival$failure<0] <- 0
 ```
 
+```{r}
+ggplot(data = stSurvival, aes(y = (success/(failure+success))))+
+  geom_point(aes(x = jitter(AeDens), color = Temp))+
+  geom_smooth(method="loess", aes(color = Temp, x = AeDens), se = F)
+  
+```
+
+
 Stephensi model selection
 ```{r}
 m0 <- glmer(cbind(success, failure) ~ 1 + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
+
 m1 <- glmer(cbind(success, failure) ~ StDensScale + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
+
 m2 <- glmer(cbind(success, failure) ~ StDensScale + TempScale + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
+
 m3 <- glmer(cbind(success, failure) ~ StDensScale + poly(TempScale,2) + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
+
 m4 <- glmer(cbind(success, failure) ~ StDensScale*poly(TempScale,2) + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
@@ -213,26 +225,34 @@ m5 <- glmer(cbind(success, failure) ~ StDensScale + poly(TempScale,2) + AeDensSc
                    data = stSurvival,
                    family = binomial(link = "logit"))
 
-m6 <- glmer(cbind(success, failure) ~ StDensScale + poly(TempScale,2) * AeDensScale + (1|Replicate),
+m6 <- glmer(cbind(success, failure) ~ (StDensScale + AeDensScale)*poly(TempScale,2) + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
 
-m7 <- glmer(cbind(success, failure) ~ StDensScale + poly(TempScale,2) + AeDensScale + TempScale:StDensScale + (1|Replicate),
+m7 <- glmer(cbind(success, failure) ~ poly(TempScale,2) + AeDensScale + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
+```
 
+```{r}
 modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"), 
                    do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7), broom::glance)),
                    AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
                    AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
 modelSummary
 
-anova(m6,m7)
+anova(m7, m7new)
 
-StephSurvivalModel <- m7
+StephSurvivalModel <- m6
 ```
 
-For stephensi, model m7 is the best fit (survival ~ AeDens + Temp^2 + StDens + Temp^2*StDens)
+For stephensi, model m6 is the best fit (survival ~ (AeDens + StDens)*Temp^2)
+
+```{r}
+summary(StephSurvivalModel)
+confint(StephSurvivalModel)
+```
+
 
 ```{r}
 plot(StephSurvivalModel, id = 0.01, idLabels=~.obs)
@@ -261,7 +281,7 @@ ggplot(data = stSurvival, aes(x=Replicate, y = resids))+
 
 ```
 
-The residuals on this model look very bad. Not sure what to do.
+The residuals on this model look very bad.
 
 Now we can predict over the response surface.
 
@@ -310,6 +330,20 @@ We will use a zero-inflated mixed model here from the `glmmADMB` package because
 ## Aedes
 
 Model Selection
+
+```{r}
+ggplot(data = aeFec, aes(y = Eggs, x = AeDens))+
+  geom_point(aes(color = Temp))+
+  geom_smooth(method = "lm", aes(color = Temp))
+
+ggplot(data = aeFec, aes(y = Eggs, x = TempNum))+
+  geom_point(aes(color = as.factor(AeDens)))+
+  geom_smooth(method = "loess", aes(color = as.factor(AeDens)))
+
+ggplot(data = aeFec, aes(y = Eggs, x = TempNum))+
+  geom_smooth(method = "loess")
+```
+
 
 ```{r, warning = F}
 m0 <- glmmadmb(Eggs ~ 1 + (1|Replicate),
@@ -427,65 +461,61 @@ ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
 
 ## Stephensi
 
-There are too many zeros in this for the zero-inflated model to work. 
+There are too many zeros in this for the zero-inflated model to work, so we try a hurdle. We end up dropping the randome effect of replicate because the variance was so low.
 
 ```{r}
-stFec <- dplyr::filter(fecundity, Species == "Stephensi" & !is.na(Eggs))
+# stFec <- dplyr::filter(fecundity, Species == "Stephensi" & !is.na(Eggs))
 ```
 
 
 ```{r, include = F}
 ggplot(data = stFec, aes(x = TempNum, y = Eggs))+
   geom_point()
+hist(stFec$Eggs)
 ```
 
 Model Selection
 
 ```{r}
-m0 <- glmer(Eggs ~ 1 + (1|Replicate),
-                   data = stFec,
-                   family = gaussian)
+# m0 <- glmer(Eggs ~ 1 + (1|Replicate),
+#                    data = stFec,
+#                    family = gaussian)
 
-m1 <- glmer(Eggs ~ poly(TempNum,2) + (1|Replicate),
-                   data = stFec,
-                   family = gaussian)
+# m1 <- glmer(Eggs ~ poly(TempNum,2) + (1|Replicate),
+#                    data = stFec,
+#                    family = gaussian)
 
-m2 <- glmer(Eggs ~ AeDens + (1|Replicate),
+m0 <- pscl::hurdle(Eggs ~ 1,
                    data = stFec,
-                   family = gaussian)
+                   dist = "negbin")
 
-m3 <- glmer(Eggs ~ StDens + (1|Replicate),
+m1 <- hurdle(Eggs ~ poly(TempNum,2),
                    data = stFec,
-                   family = gaussian)
+                   dist = "negbin")
 
-m4 <- glmer(Eggs ~ AeDens + TempNum + (1|Replicate),
+m2 <- hurdle(Eggs ~ AeDens,
                    data = stFec,
-                   family = gaussian)
+                   dist = "negbin")
 
-m5 <- glmer(Eggs ~ AeDens + poly(TempNum,2) + (1|Replicate),
+m3 <- hurdle(Eggs ~ StDens,
                    data = stFec,
-                   family = gaussian)
+                   dist = "negbin")
 
-m6 <- glmer(Eggs ~ AeDens*poly(TempNum,2) + (1|Replicate),
+m4 <- hurdle(Eggs ~ TempNum,
                    data = stFec,
-                   family = gaussian)
-
-m7 <- glmer(Eggs ~ (AeDens + StDens)*TempNum + (1|Replicate),
-                   data = stFec,
-                   family = gaussian)
+                   dist = "negbin")
 ```
 
 ```{r}
-modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"), 
-                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7), broom::glance)),
-                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
-                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
+modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4"), 
+                   AICc = AICc(m0, m1, m2, m3, m4), 
+                   AICweights = Weights(AIC(m0, m1, m2, m3, m4)))
 modelSummary
 
-StephensiFecundityModel <- m6
+StephensiFecundityModel <- m0
 ```
 
-The best fitting model is (Aedes*Temp^2), however none of these covariates are significant (i.e. their confidence intervals overlap 0). So Stephensi fecundity is not affected by inter or intraspecific densities or temperature, but note that this may also be because of the small sample size.
+The best fitting model is the null model. None of these factors affect Stephensi fecundity.
 
 ```{r}
 summary(StephensiFecundityModel)
@@ -493,12 +523,10 @@ confint(StephensiFecundityModel)
 ```
 
 ```{r}
-plot(StephensiFecundityModel, id = 0.01, idLabels=~.obs)
-qqnorm(resid(StephensiFecundityModel))
-qqline(resid(StephensiFecundityModel), col = "red")
-
-stFec$preds <- predict(StephensiFecundityModel)
+stFec$preds <- fitted(StephensiFecundityModel)
 stFec$resids <- resid(StephensiFecundityModel)
+
+plot(stFec$preds, stFec$resids)
 
 hist(stFec$resids)
 
@@ -644,7 +672,7 @@ modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"),
                    AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
                    AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
 modelSummary
-anova(m4, m7, m8)
+anova(m4, m7)
 
 AedesGrowthModel <- m7
 ```
@@ -776,9 +804,6 @@ abline(lm(nonZero ~ StDens, data = GrowthStephensi))
 
 plot(GrowthStephensi$TempNum, GrowthStephensi$nonZero, pch=20)
 abline(lm(nonZero ~ TempNum, data = GrowthStephensi)) #temperature has no effect zero
-
-hist(GrowthStephensi$lambda)
-hist(GrowthStephensi$lambda[GrowthStephensi$lambda>0])
 ```
 
 Model selection for zero vs. nonzero growth
@@ -841,6 +866,7 @@ ggplot(data = GrowthStephensi, aes(x=TempNum, y = residsBin, group = TempNum))+
 ```
 
 Second part of hurdle model for non-zeros
+
 ```{r}
 m0 <- glmer(lambda ~ 1 + (1|Replicate),
             data = subset(GrowthStephensi, nonZero==1),
@@ -881,7 +907,7 @@ modelSummary
 StephensiGrowthModel2 <- m1
 ```
 
-Best Model is Temp + StDens
+Best Model is temperature (slightly positive).
 
 ```{r}
 plot(StephensiGrowthModel2, id = 0.01, idLabels=~.obs)
@@ -958,5 +984,15 @@ ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
   facet_wrap(~TempNum, ncol = 5) +
   xlab("Stephensi Density") +
   ylab("Aegypti Density") 
+```
+
+# Save All Results
+
+```{r}
+#models
+save(AedesSurvivalModel, AedesFecundityModel, AedesGrowthModel, 
+     StephSurvivalModel, StephensiFecundityModel, StephensiGrowthModelBin, 
+     StephensiGrowthModel2, file = "finalModels.RData")
+
 ```
 
