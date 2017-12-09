@@ -95,7 +95,9 @@ m7 <- glmer(cbind(success, failure) ~ AeDensScale + poly(TempNum,2) + StDensScal
 m8 <- glmer(cbind(success, failure) ~ AeDensScale*poly(TempNum,2) + StDensScale*poly(TempNum,2) + (1|Replicate),
                    data = aeSurvival,
                    family = binomial(link = "logit"))
+```
 
+```{r}
 modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7" , "m8"), 
                    do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7, m8), broom::glance)),
                    AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7, m8), 
@@ -359,8 +361,6 @@ modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"),
                    AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
                    AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
 modelSummary
-anova(m4, m5,m6, m7)
-
 AedesFecundityModel <- m5
 
 ```
@@ -434,6 +434,11 @@ stFec <- dplyr::filter(fecundity, Species == "Stephensi" & !is.na(Eggs))
 ```
 
 
+```{r, include = F}
+ggplot(data = stFec, aes(x = TempNum, y = Eggs))+
+  geom_point()
+```
+
 Model Selection
 
 ```{r}
@@ -441,7 +446,7 @@ m0 <- glmer(Eggs ~ 1 + (1|Replicate),
                    data = stFec,
                    family = gaussian)
 
-m1 <- glmer(Eggs ~ TempNum + (1|Replicate),
+m1 <- glmer(Eggs ~ poly(TempNum,2) + (1|Replicate),
                    data = stFec,
                    family = gaussian)
 
@@ -712,7 +717,8 @@ GrowthStephensi <- emergenceData %>%
   filter(StDens>0)
 
 #add in predicted fecundity based on overall mean since model had no significance
-GrowthStephensi$fwx <- mean(fecundity$Eggs[fecundity$Species == "Stephensi"], na.rm = T)
+GrowthStephensi$fwx <- mean(fecundity$Eggs[fecundity$Species == "Stephensi"], 
+                            na.rm = T)
 
 #calculate overall per capita growth rate
 GrowthStephensi <- GrowthStephensi %>%
@@ -812,7 +818,7 @@ modelSummary
 StephensiGrowthModelBin <- m4
 ```
 
-Whether or not growth is zero (basically mosquitoes emerge), is dependent on density, not temperature.
+Whether or not growth is zero (basically mosquitoes emerge), is dependent on density (Aedes and Stephensi), not temperature.
 
 Inspect residuals, although this is more important for final hurdle model.
 ```{r}
@@ -838,37 +844,41 @@ Second part of hurdle model for non-zeros
 ```{r}
 m0 <- glmer(lambda ~ 1 + (1|Replicate),
             data = subset(GrowthStephensi, nonZero==1),
-            family = Gamma(link = log))
+            family = gaussian)
 
 m1 <- glmer(lambda ~ TempScale + (1|Replicate),
             data = subset(GrowthStephensi, nonZero==1),
-            family = Gamma(link = log))
+            family = gaussian)
 
 m2 <- glmer(lambda ~ AeDensScale + (1|Replicate),
             data = subset(GrowthStephensi, nonZero==1),
-            family = Gamma(link = log))
+            family = gaussian)
 
 m3 <- glmer(lambda ~ StDensScale + (1|Replicate),
             data = subset(GrowthStephensi, nonZero==1),
-            family = Gamma(link = log))
+            family = gaussian)
 
 m4 <- glmer(lambda ~ StDensScale + TempScale + (1|Replicate),
             data = subset(GrowthStephensi, nonZero==1),
-            family = Gamma(link = log))
+            family = gaussian)
 
 m5 <-  glmer(lambda ~ StDensScale * TempScale + (1|Replicate),
             data = subset(GrowthStephensi, nonZero==1),
-            family = Gamma(link = log))
+            family = gaussian)
+
+m6 <- glmer(lambda ~ StDensScale + poly(TempScale,2) + (1|Replicate),
+            data = subset(GrowthStephensi, nonZero==1),
+            family = gaussian)
 ```
 
 ```{r}
-modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5"), 
-                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5), broom::glance)),
-                   AICc = AICc(m0, m1, m2, m3, m4, m5), 
-                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5)))
+modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6"), 
+                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6), broom::glance)),
+                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6), 
+                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6)))
 modelSummary
 
-StephensiGrowthModel2 <- m4
+StephensiGrowthModel2 <- m1
 ```
 
 Best Model is Temp + StDens
@@ -881,7 +891,7 @@ qqline(resid(StephensiGrowthModel2), col = "red")
 GrowthStephensi$predsGam[GrowthStephensi$nonZero==1] <- predict(StephensiGrowthModel2)
 GrowthStephensi$residsGam[GrowthStephensi$nonZero==1] <- resid(StephensiGrowthModel2)
 
-hist(GrowthStephensi$resids2)
+hist(GrowthStephensi$residsGam)
 
 ggplot(data = GrowthStephensi, aes(x=AeDens, y = residsGam, group = AeDens))+
   geom_boxplot() +
@@ -898,24 +908,55 @@ summary(StephensiGrowthModel2)
 confint(StephensiGrowthModel2)
 ```
 
-Calculate overall prediction of growth rate by back transforming results of two models see https://stats.stackexchange.com/questions/234887/predicting-future-values-with-hurdle-poisson-model , but adjust for gamma
 
 ```{r}
-phi_zero <- predict(StephensiGrowthModelBin, newdata = GrowthStephensi, type = "response")
-gammaPreds<- predict(StephensiGrowthModel2, newdata = GrowthStephensi, type = "response")
-#get >0 probability of second model
-phi_count <- pgamma(q = 0, 
-                    shape = 1/sigma(StephensiGrowthModel2)^2,
-                    scale = gammaPreds/2,
-                    log.p = F,
-                    lower.tail = F)
+unHurdle <- function(mod1, mod2, newDF){
+  #' Function that creates predictions based on binomial/guassian hurdle model
+  
+  #' @param mod1 binomial model
+  #' @param mod2 second model, gaussian in this case
+  #' @param newDF new data frame to predict over, must have same columns as original
+  phi_zero <- predict(mod1, newdata = newDF, type = "response")
+  mod2Preds <- predict(mod2, newdata = newDF, type = "response")
+  #calculate probability of zero in second model to subtract from first
+  phi_count <- pnorm(q = 0, 
+                    mean = mod2Preds,
+                    sd = sigma(mod2),
+                    log.p = F)
+  phi <- phi_zero - phi_count
+  predsAll <- phi * mod2Preds
+  return(predsAll)
+}
 
-phi <- phi_zero/phi_count
-
-predsAll <- phi * gammaPreds #final prediction over all
+predsAll <- unHurdle(mod1 = StephensiGrowthModelBin, mod2 = StephensiGrowthModel2, newDF = GrowthStephensi)
 
 GrowthStephensi$predsFinal <- predsAll
 ```
 
+```{r}
+#heatmap plots
+newData <- expand.grid(AeDens=seq(0,128, by=2), StDens=seq(0,128, by=2), TempNum=c(16,20,24,28,32), Replicate = c("A", "B"))
+newData <- newData %>%
+  mutate(TempScale = as.vector(scale(TempNum, center = F, scale = T))) %>%
+  mutate(AeDensScale = as.vector(scale(AeDens, center = F, scale = T))) %>%
+  mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T)))
 
+newData$preds <- unHurdle(mod1 = StephensiGrowthModelBin, mod2 = StephensiGrowthModel2, newDF = newData)
+#get means over replicates to plot
+predicted <- newData %>%
+  group_by(TempNum, AeDens, StDens) %>%
+  summarise(preds = mean(preds))
+#remove extrapolation outside of measured range
+predicted$preds[predicted$AeDens+predicted$StDens>128] <- NA  
+
+#plot it
+ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
+  geom_raster(aes(fill=preds))+
+  geom_contour(color="gray90")+
+  theme_minimal()+
+  scale_fill_viridis(name="Growth Rate")+
+  facet_wrap(~TempNum, ncol = 5) +
+  xlab("Stephensi Density") +
+  ylab("Aegypti Density") 
+```
 
