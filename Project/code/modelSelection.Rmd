@@ -26,6 +26,8 @@ library(MuMIn)
 #             getOption("repos")),
 #     type="source")
 library(glmmADMB)
+library(pscl)
+library(cowplot)
 ```
 
 ```{r}
@@ -103,7 +105,6 @@ modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7" , "m
                    AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7, m8), 
                    AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7, m8)))
 modelSummary
-anova(m6,m7, m8)
 
 AedesSurvivalModel <- m7
 
@@ -155,19 +156,25 @@ newData <- newData %>%
   mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T)))
 
 newData$preds <- predict(AedesSurvivalModel, type = "response", newdata = newData)
+#remove extrapolation outside of measured range
+newData$preds[newData$AeDens+newData$StDens>128] <- NA  
 #get means over replicates to plot
 predicted <- newData %>%
   group_by(TempNum, AeDens, StDens) %>%
-  summarise(preds = mean(preds))
-#remove extrapolation outside of measured range
-predicted$preds[predicted$AeDens+predicted$StDens>128] <- NA  
+  summarise(preds = mean(preds, na.rm = T))
 
+```
+
+```{r}
 #plot it
-ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
+aeSurvPlot <- ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
   geom_raster(aes(fill=preds))+
-  geom_contour(color="gray90")+
+  geom_contour(color="black")+
   theme_minimal()+
-  scale_fill_viridis(name="Prop. Emerged")+
+  scale_fill_viridis(name="Prop. Emerged", na.value = "gray90",
+                     begin = 0, end = 1)+
+  #geom_contour(color="white")+
+  #scale_fill_gradient(low = "gray90", high = "gray10", na.value = "white")+
   facet_wrap(~TempNum, ncol = 5) +
   xlab("Stephensi Density") +
   ylab("Aegypti Density")
@@ -193,8 +200,8 @@ stSurvival$failure[stSurvival$failure<0] <- 0
 
 ```{r}
 ggplot(data = stSurvival, aes(y = (success/(failure+success))))+
-  geom_point(aes(x = jitter(AeDens), color = Temp))+
-  geom_smooth(method="loess", aes(color = Temp, x = AeDens), se = F)
+  geom_point(aes(x = jitter(StDens), color = Temp))+
+  geom_smooth(method="loess", aes(color = Temp, x = StDens), se = F)
   
 ```
 
@@ -209,44 +216,46 @@ m1 <- glmer(cbind(success, failure) ~ StDensScale + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
 
-m2 <- glmer(cbind(success, failure) ~ StDensScale + TempScale + (1|Replicate),
+m2 <- glmer(cbind(success, failure) ~ AeDensScale + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
 
-m3 <- glmer(cbind(success, failure) ~ StDensScale + poly(TempScale,2) + (1|Replicate),
+m3 <- glmer(cbind(success, failure) ~ AeDensScale + StDensScale + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
 
-m4 <- glmer(cbind(success, failure) ~ StDensScale*poly(TempScale,2) + (1|Replicate),
+m4 <- glmer(cbind(success, failure) ~ StDensScale + TempScale + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
 
-m5 <- glmer(cbind(success, failure) ~ StDensScale + poly(TempScale,2) + AeDensScale + (1|Replicate),
+m5 <- glmer(cbind(success, failure) ~ AeDensScale + StDensScale + TempScale + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
 
-m6 <- glmer(cbind(success, failure) ~ (StDensScale + AeDensScale)*poly(TempScale,2) + (1|Replicate),
+m6 <- glmer(cbind(success, failure) ~ poly(AeDensScale,2) + TempScale + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
 
-m7 <- glmer(cbind(success, failure) ~ poly(TempScale,2) + AeDensScale + (1|Replicate),
+m7 <- glmer(cbind(success, failure) ~ AeDensScale + TempScale + poly(StDensScale,2) + (1|Replicate),
+                   data = stSurvival,
+                   family = binomial(link = "logit"))
+
+m8 <- glmer(cbind(success, failure) ~ poly(StDensScale,2) + AeDensScale + (1|Replicate),
                    data = stSurvival,
                    family = binomial(link = "logit"))
 ```
 
 ```{r}
-modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"), 
-                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7), broom::glance)),
-                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
-                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
+modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7" , "m8"), 
+                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7, m8), broom::glance)),
+                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7,m8), 
+                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7,m8)))
 modelSummary
 
-anova(m7, m7new)
-
-StephSurvivalModel <- m6
+StephSurvivalModel <- m8
 ```
 
-For stephensi, model m6 is the best fit (survival ~ (AeDens + StDens)*Temp^2)
+For stephensi, model m8 is the best fit (survival ~ AeDens + StDens^2). Temperature is not significant in m7, which has a similar AIC as m8.
 
 ```{r}
 summary(StephSurvivalModel)
@@ -294,19 +303,22 @@ newData <- newData %>%
   mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T)))
 
 newData$preds <- predict(StephSurvivalModel, type = "response", newdata = newData)
+#remove extrapolation outside of measured range
+newData$preds[newData$AeDens+newData$StDens>128] <- NA  
 #get means over replicates to plot
 predicted <- newData %>%
-  group_by(TempNum, AeDens, StDens) %>%
+  group_by(AeDens, StDens, TempNum) %>%
   summarise(preds = mean(preds))
-#remove extrapolation outside of measured range
-predicted$preds[predicted$AeDens+predicted$StDens>128] <- NA  
+```
 
+```{r}
 #plot it
-ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
+stSurvPlot <- ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
   geom_raster(aes(fill=preds))+
   geom_contour(color="gray90")+
   theme_minimal()+
-  scale_fill_viridis(name="Prop. Emerged")+
+  scale_fill_viridis(name="Prop. Emerged", na.value = "gray90",
+                     begin = 0, end = 1)+
   facet_wrap(~TempNum, ncol = 5) +
   xlab("Stephensi Density") +
   ylab("Aegypti Density")
@@ -441,31 +453,31 @@ newData <- newData %>%
   mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T)))
 
 newData$preds <- predict(AedesFecundityModel, type = "response", newdata = newData)
+#remove extrapolation outside of measured range
+newData$preds[newData$AeDens+newData$StDens>128] <- NA
 #get means over replicates to plot
 predicted <- newData %>%
-  group_by(TempNum, AeDens, StDens) %>%
-  summarise(preds = mean(preds))
-#remove extrapolation outside of measured range
-predicted$preds[predicted$AeDens+predicted$StDens>128] <- NA  
+  group_by(TempNum, AeDens) %>%
+  summarise(preds = mean(preds, na.rm = T)) %>%
+  ungroup()
+```
 
+```{r}
 #plot it
-ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
+aeFecPlot<- ggplot(predicted, aes(x=TempNum, y=AeDens, z=preds))+
   geom_raster(aes(fill=preds))+
   geom_contour(color="gray90")+
   theme_minimal()+
   scale_fill_viridis(name="Number of Eggs Laid")+
-  facet_wrap(~TempNum, ncol = 5) +
-  xlab("Stephensi Density") +
-  ylab("Aegypti Density")
+  #facet_wrap(~TempNum, ncol = 5) +
+  xlab("Temperature(C)") +
+  ylab("Aegypti Density") +
+  coord_cartesian(xlim = c(16, 32))
 ```
 
 ## Stephensi
 
 There are too many zeros in this for the zero-inflated model to work, so we try a hurdle. We end up dropping the randome effect of replicate because the variance was so low.
-
-```{r}
-# stFec <- dplyr::filter(fecundity, Species == "Stephensi" & !is.na(Eggs))
-```
 
 
 ```{r, include = F}
@@ -477,13 +489,6 @@ hist(stFec$Eggs)
 Model Selection
 
 ```{r}
-# m0 <- glmer(Eggs ~ 1 + (1|Replicate),
-#                    data = stFec,
-#                    family = gaussian)
-
-# m1 <- glmer(Eggs ~ poly(TempNum,2) + (1|Replicate),
-#                    data = stFec,
-#                    family = gaussian)
 
 m0 <- pscl::hurdle(Eggs ~ 1,
                    data = stFec,
@@ -541,35 +546,6 @@ ggplot(data = stFec, aes(x = AeDens, y = resids, group = AeDens))+
 ggplot(data = stFec, aes(x=TempNum, y = resids, group = TempNum))+
   geom_boxplot() +
   theme_base()
-```
-
-Create heatmaps of the eggs:
-
-```{r, include = F}
-#heatmap plots
-newData <- expand.grid(AeDens=seq(0,128, by=2), StDens=seq(0,128, by=2), TempNum=c(16,20,24,28,32), Replicate = c("A", "B"))
-newData <- newData %>%
-  mutate(TempScale = as.vector(scale(TempNum, center = F, scale = T))) %>%
-  mutate(AeDensScale = as.vector(scale(AeDens, center = F, scale = T))) %>%
-  mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T)))
-
-newData$preds <- predict(m0, type = "response", newdata = newData)
-#get means over replicates to plot
-predicted <- newData %>%
-  group_by(TempNum, AeDens, StDens) %>%
-  summarise(preds = mean(preds))
-#remove extrapolation outside of measured range
-predicted$preds[predicted$AeDens+predicted$StDens>128] <- NA  
-
-#plot it
-ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
-  geom_raster(aes(fill=preds))+
-  geom_contour(color="gray90")+
-  theme_minimal()+
-  scale_fill_viridis(name="Number of Eggs Laid")+
-  facet_wrap(~TempNum, ncol = 5) +
-  xlab("Stephensi Density") +
-  ylab("Aegypti Density")
 ```
 
 # Growth Rate
@@ -649,8 +625,7 @@ m3 <- glmer(lambda ~ poly(AeDensScale,2)+ (1|Replicate),
                    family = gaussian)
 
 m4 <- glmer(lambda ~ AeDensScale + poly(TempScale,2) + (1|Replicate),
-                   data = GrowthAedes,
-                   family = gaussian)
+                   data = GrowthAedes)
 
 m5 <- glmer(lambda ~ AeDensScale + poly(TempScale,2) + StDensScale + (1|Replicate),
                    data = GrowthAedes,
@@ -660,24 +635,19 @@ m6 <- glmer(lambda ~ AeDensScale*TempScale+ (1|Replicate),
                    data = GrowthAedes,
                    family = gaussian)
 
-m7 <- glmer(lambda ~ poly(AeDensScale,2) + poly(TempScale,2) + (1|Replicate),
-                   data = GrowthAedes,
-                   family = gaussian)
-
 ```
 
 ```{r}
-modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6", "m7"), 
-                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6, m7), broom::glance)),
-                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6, m7), 
-                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6, m7)))
+modelSummary <- cbind(model = c("m0","m1","m2","m3", "m4", "m5", "m6"), 
+                   do.call(rbind, lapply(list(m0, m1, m2, m3, m4, m5, m6), broom::glance)),
+                   AICc = AICc(m0, m1, m2, m3, m4, m5, m6), 
+                   AICweights = Weights(AIC(m0, m1, m2, m3, m4, m5, m6)))
 modelSummary
-anova(m4, m7)
 
-AedesGrowthModel <- m7
+AedesGrowthModel <- m4
 ```
 
-The final model is Aedes^2 + Temp^2.
+The final model is Aedes + Temp^2.
 
 ```{r}
 summary(AedesGrowthModel)
@@ -715,22 +685,26 @@ newData <- newData %>%
   mutate(StDensScale = as.vector(scale(StDens, center = F, scale = T)))
 
 newData$preds <- predict(AedesGrowthModel, type = "response", newdata = newData)
+#remove extrapolation outside of measured range
+newData$preds[newData$AeDens+newData$StDens>128] <- NA
 #get means over replicates to plot
 predicted <- newData %>%
   group_by(TempNum, AeDens, StDens) %>%
-  summarise(preds = mean(preds))
-#remove extrapolation outside of measured range
-predicted$preds[predicted$AeDens+predicted$StDens>128] <- NA  
+  summarise(preds = mean(preds, na.rm=T)) %>%
+  ungroup()
+  
+aeGrowthPreds <- predicted
 
 #plot it
-ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
+aeGrowthPlot <- ggplot(aeGrowthPreds, aes(x=StDens, y=AeDens, z=preds))+
   geom_raster(aes(fill=preds))+
-  geom_contour(color="gray90")+
+  geom_contour(color="black")+
   theme_minimal()+
-  scale_fill_viridis(name="Growth Rate")+
+  scale_fill_viridis(name="Growth Rate", na.value = "gray90",
+                     limits = c(0,1.25))+
   facet_wrap(~TempNum, ncol = 5) +
   xlab("Stephensi Density") +
-  ylab("Aegypti Density") 
+  ylab("Aegypti Density")
 ```
 
 ## Stephensi
@@ -872,9 +846,8 @@ m0 <- glmer(lambda ~ 1 + (1|Replicate),
             data = subset(GrowthStephensi, nonZero==1),
             family = gaussian)
 
-m1 <- glmer(lambda ~ TempScale + (1|Replicate),
-            data = subset(GrowthStephensi, nonZero==1),
-            family = gaussian)
+m1 <- lmerTest::lmer(lambda ~ TempScale + (1|Replicate),
+            data = subset(GrowthStephensi, nonZero==1))
 
 m2 <- glmer(lambda ~ AeDensScale + (1|Replicate),
             data = subset(GrowthStephensi, nonZero==1),
@@ -975,12 +948,16 @@ predicted <- newData %>%
 #remove extrapolation outside of measured range
 predicted$preds[predicted$AeDens+predicted$StDens>128] <- NA  
 
+stGrowthPreds <- predicted
+
 #plot it
-ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
+stGrowthPlot <- ggplot(stGrowthPreds, aes(x=StDens, y=AeDens,
+                                          z=preds))+
   geom_raster(aes(fill=preds))+
   geom_contour(color="gray90")+
   theme_minimal()+
-  scale_fill_viridis(name="Growth Rate")+
+  scale_fill_viridis(name="Growth Rate", na.value = "gray90",
+                     limits = c(0,1.25))+
   facet_wrap(~TempNum, ncol = 5) +
   xlab("Stephensi Density") +
   ylab("Aegypti Density") 
@@ -993,6 +970,16 @@ ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
 save(AedesSurvivalModel, AedesFecundityModel, AedesGrowthModel, 
      StephSurvivalModel, StephensiFecundityModel, StephensiGrowthModelBin, 
      StephensiGrowthModel2, file = "finalModels.RData")
+```
 
+```{r save plots}
+survivalPlot <- plot_grid(aeSurvPlot,
+          stSurvPlot,
+          nrow = 2,
+          labels=c("A", "B"))
+
+aeFecPlot
+
+growthPlot <- plot_grid(aeGrowthPlot, stGrowthPlot, nrow = 2, labels = c("A", "B"))
 ```
 
