@@ -7,25 +7,40 @@ bibliography: references.bib
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, include = F, warning = F, message = F)
+library(ggplot2)
+library(ggthemes)
+```
+
+```{r set ggplot theme}
+theme_set(theme_bw())
 ```
 
 
 # Introduction
 
-The frequency of infectious disease emergence has been increasing since the mid-20th century. Incidence of vector borne diseases, specifically, have increased over 25% over the past decade [@jones2008], with notable recent outbreaks such as Zika and chikungunya. One potential driver of this increase is land-use change, such as agricultural intensification and urbanization [@gottdenker2014, @jones2013]. Urbanization can cause increases in vector-borne disease through changes to mosquito habitat and environmental conditions. For container breeding species such as *Aedes aegypti*, the primary vector of dengue and yellow fever, urbanization increases the amount of habitat available for breeding [@zahouli2017, @li2014]. Further, urbanization can alter the microclimate of the environment through the urban heat island effect. Mosquitoes, being small ectotherms, are extremely susceptible to changes in temperature, which can have significant WORD on life history traits relevant to demography and disease transmission [@murdock2017, @paaijmans2009]. The majority of past work has focused on the abiotic effects of urbanization, ignoring changes to biotic factors such as community composition and larval densities.  However, these biotic factors may be especially strong as local scales [@cohenYEAR], and have been shown to impact mosquitoes (alto papers??), and may interact with abiotic facto. Therefore, the interaction of biotic and abiotic effects on mosquito population dynamics is still relatively unexplored.
+The frequency of infectious disease emergence has been increasing since the mid-20th century. Incidence of vector borne diseases, specifically, have increased over 25% over the past decade [@jones2008], with notable recent outbreaks such as Zika and chikungunya in the Americas. One driver of this increase is land-use change, such as agricultural intensification and urbanization [@gottdenker2014, @jones2013]. Urbanization can cause increases in vector-borne disease through changes to mosquito habitat and environmental conditions. For container breeding species such as *Aedes aegypti*, the primary vector of dengue and yellow fever, urbanization increases the amount of habitat available for breeding [@zahouli2017, @li2014]. Further, urbanization can alter the microclimate of the environment through the urban heat island effect, leader to warmer temperatures in urban areas[@peng2012]. 
 
-Next paragraph goes further and identifies a system in which we think this could be playing a major role in disease outcomes
+Mosquitoes, being small ectotherms, are extremely susceptible to changes in temperature, which can significantly impact on life history traits relevant to demography and disease transmission [@murdock2017, @paaijmans2009]. The majority of past work has focused on the abiotic effects of urbanization, ignoring changes to biotic factors such as community composition and larval densities.  Mosquito population growth is density dependent in the larval stage [@juliano1998, reiskind2009a], and can be mediated by environmental factors such as temperature [@costanzo2005, lounibos2002a] , leading to a potential interaction between abiotic and biotic factors.
 
-The major vectors of arboviruses tend to be container breeding species, which often cohabit in containers with other mosquito species, leading to strong control via density-dependence and interspecific competition (some alto papers). For example, list all the aegypti vs. albopictus stuff and how this effects populations and disease. Not all co-habitating species, however, also share pathogens, further complicating stuff. In urban India, for example, Anopheles stephensi, the primary vector of urban malaria, is often found cohabiting with Aedes aegypti, the primary vector of dengue. SENTENCE ABOUT CYCLICAL NATURE OF DISEASE (Olivier Telle paper, maybe something else). This seasonality of disease has been hypothesized to be tied to outcomes of competition, however, no one knows how these species interact, and how this interaction may change across season, given thermal preferences and all that.
+Many primary vectors of arboviruses are container breeding species, which often cohabit in containers with other mosquito species, leading to strong control via density-dependence and interspecific competition [@juliano2010]. For example, the invasion of the Southeastern United States by *Ae. albopictus* has lead to habitat partitioning with *Ae. aeygypti*, due to *Ae. albopictus*'s competitive dominance at low resource levels [@fader2016]. In this case, the vectors share many pathogens, and the dominance of an area by one species is not likely to introduce novel arboviruses to the population. However, in some systems, cohabiting vectors may transmit different pathogens, and competitive outcomes can have significant impacts on disease transmission. In urban India, for example, *Anopheles stephensi*, the primary vector of urban malaria, is often found cohabiting with *Ae. aegypti*, the primary vector of dengue [@thomas2016]. SENTENCE ABOUT CYCLICAL NATURE OF DISEASE (Olivier Telle paper, maybe something else). This seasonality of disease has been hypothesized to be tied to outcomes of competition, however, the outcome of competition between *An. stephensi* and *Ae. aeygypti*, and the extent to which it is seasonally dependent is unknown.
 
-Here, we explore the interactive effects of interspecific competition, intraspecific competition, and temperature on the population growth of two co-habiting mosquito species, Aedes aegypti and Anopheles stephensi, using a laboratory model system to parameterize demographic life history traits and ultimately calculate population grwoth rates. By comparing these populatoin growth rates of individual species under WORD scenarios, we then construct phase-plane WORD to investigate the expected outcome of each regime, allowing us the compare the relative importance of abiotic and biotic factors on mosquito population dynamics.
+Here, we explore the interactive effects of interspecific competition, intraspecific competition, and temperature on the population growth of two co-habiting mosquito species, *Aedes aegypti* and *Anopheles stephensi*, using a laboratory model system to parameterize demographic life history traits and ultimately calculate population grwoth rates. SOMETHING SOMETHING the relative importance of abiotic and biotic factors on mosquito population dynamics.
 
 # Materials/Methods
 
 ## Mosquito Rearing
 
 We used a response surface design to rear  *Aedes aegypti* (Mexico, F5) and *Anopheles stephensi* (Walter Reed strain) first-instar larvae across 5 temperatures at 15 densities for a total of 75 treatments. There were three total density levels (32, 64, and 128 individuals), each with 5 ratios of Aedes:Stephensi (0:4,1:3,2:2,3:1,4:0) (FIGURE). The experimental setup was replicated twice.
+
+```{r fig1, fig.width=3, fig.height=3, fig.cap="Plot of density treatments used in experiment. Each group of fifteen density treatments was repeated across five temperatures (16C, 20C, 24C, 28C, 32C)."}
+ggplot(data=data.frame(Aedes=c(0,8,16,24,32,0,16,32,48,64,0,32,64,96,128), 
+                       Stephensi = c(32,24,16,8,0,64,48,32,16,0,128,96,64,32,0)))+
+  geom_point(aes(x = Stephensi, y = Aedes), size=6)+
+  ylab("Aedes Density")+
+  xlab("Stephensi Density")
+```
+
 
 Larvae were reared in 32 oz. glass jars with 250mL deionized water and 0.10g of pellet fish food (Hikari Cichlid Gold, baby size). Jars were covered with a fine mesh and placed in Percival incubators with a daily periodic fluctuation of 9&deg;C following the Parton-Logan equation, characterized by a sine wave during the daytime and an exponential curve during the nighttime [@parton1981]. Incubators were set to 80\% relative humidity and 12:12 hour light:dark cycle.
 
@@ -47,7 +62,16 @@ Where $N_0$ is the initial number of female mosquitoes (assumed to be 50\% of th
 
 ## Fitting Models and Elasticity Analyses
 
+
+
 # Results
+
+```{r, eval = F, include = F}
+load("finalModels.RData")
+#create tidy table of results
+
+```
+
 
 # Discussion
 
