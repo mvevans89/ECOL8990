@@ -1,0 +1,34 @@
+% Please add the following required packages to your document preamble:
+% \usepackage[normalem]{ulem}
+% \useunder{\uline}{\ul}{}
+\begin{table}[]
+\centering
+\caption{Table of results from mixed models of \textit{Ae. aegypti} survival, fecundity, and per capita growth as a function of temperature, interspecific density and intraspecific densities. }
+\label{ref:tab2}
+\begin{tabular}{lllll}
+                             & {\ul \textbf{Term}}             & {\ul \textbf{Estimate}} & {\ul \textbf{s.e.}} & {\ul \textbf{p-value}} \\
+\hline
+\textbf{Stephensi Survival}  &                                 &                         &                     &                        \\
+                             & (Intercept)                     & 1.938                   & 0.603               & 0.001                  \\
+                             & StDensScale                     & -5.161                  & 0.818               & \textless0.001         \\
+                             & AeDensScale                     & -6.287                  & 0.821               & \textless0.001         \\
+                             & poly(TempScale, 2)1             & 24.258                  & 5.651               & \textless0.001         \\
+                             & poly(TempScale, 2)2             & 6.452                   & 4.372               & 0.14                   \\
+                             & StDensScale:poly(TempScale, 2)1 & -36.003                 & 9.160               & \textless0.001         \\
+                             & StDensScale:poly(TempScale, 2)2 & -19.723                 & 6.738               & 0.003                  \\
+                             & AeDensScale:poly(TempScale, 2)1 & -35.208                 & 9.594               & \textless0.001         \\
+                             & AeDensScale:poly(TempScale, 2)2 & -16.790                 & 7.738               & 0.03                   \\
+\hline
+\textbf{Stephensi Fecundity} &                                 &                         &                     &                        \\
+                             & Zero hurdle intercept           & -1.084                  & 0.241               & \textless0.001         \\
+                             & NegBin Intercept                & 4.205                   & 0.096               & \textless0.001         \\
+                             & Log(theta)                      & 1.621                   & 0.317               & \textless0.001         \\
+\hline
+\textbf{Stephensi Growth}    &                                 &                         &                     &                        \\
+Zero hurdle                  & Intercept                       & 3.216                   & 0.807               & \textless0.001         \\
+                             & AeDensScale                     & -5.471                  & 1.29                & \textless0.001         \\
+                             & StDensScale                     & -2.896                  & 0.773               & \textless0.001         \\
+LMM                          & Intercept                       & 1.019                   & 0.03                & \textless0.001         \\
+                             & Temperature                     & 0.075                   & 0.027               & 0.009
+\end{tabular}
+\end{table}

@@ -1,8 +1,10 @@
 ---
 title: "Model Selection"
 author: "Michelle Evans"
-date: ""
-output: html_document
+date: ''
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -163,13 +165,10 @@ predicted <- newData %>%
   group_by(TempNum, AeDens, StDens) %>%
   summarise(preds = mean(preds, na.rm = T))
 
-```
-
-```{r}
 #plot it
 aeSurvPlot <- ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
   geom_raster(aes(fill=preds))+
-  geom_contour(color="black")+
+  geom_contour(color="black", binwidth = 0.1)+
   theme_minimal()+
   scale_fill_viridis(name="Prop. Emerged", na.value = "gray90",
                      begin = 0, end = 1)+
@@ -179,6 +178,7 @@ aeSurvPlot <- ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
   xlab("Stephensi Density") +
   ylab("Aegypti Density")
 ```
+
 
 ## Stephensi
 
@@ -309,13 +309,11 @@ newData$preds[newData$AeDens+newData$StDens>128] <- NA
 predicted <- newData %>%
   group_by(AeDens, StDens, TempNum) %>%
   summarise(preds = mean(preds))
-```
 
-```{r}
 #plot it
 stSurvPlot <- ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
   geom_raster(aes(fill=preds))+
-  geom_contour(color="gray90")+
+  geom_contour(color="gray90", binwidth=0.1)+
   theme_minimal()+
   scale_fill_viridis(name="Prop. Emerged", na.value = "gray90",
                      begin = 0, end = 1)+
@@ -460,13 +458,10 @@ predicted <- newData %>%
   group_by(TempNum, AeDens) %>%
   summarise(preds = mean(preds, na.rm = T)) %>%
   ungroup()
-```
 
-```{r}
-#plot it
 aeFecPlot<- ggplot(predicted, aes(x=TempNum, y=AeDens, z=preds))+
   geom_raster(aes(fill=preds))+
-  geom_contour(color="gray90")+
+  geom_contour(color="gray90", binwidth = 10)+
   theme_minimal()+
   scale_fill_viridis(name="Number of Eggs Laid")+
   #facet_wrap(~TempNum, ncol = 5) +
@@ -698,7 +693,7 @@ aeGrowthPreds <- predicted
 #plot it
 aeGrowthPlot <- ggplot(aeGrowthPreds, aes(x=StDens, y=AeDens, z=preds))+
   geom_raster(aes(fill=preds))+
-  geom_contour(color="black")+
+  geom_contour(color="black", binwidth = 0.1)+
   theme_minimal()+
   scale_fill_viridis(name="Growth Rate", na.value = "gray90",
                      limits = c(0,1.25))+
@@ -954,7 +949,7 @@ stGrowthPreds <- predicted
 stGrowthPlot <- ggplot(stGrowthPreds, aes(x=StDens, y=AeDens,
                                           z=preds))+
   geom_raster(aes(fill=preds))+
-  geom_contour(color="gray90")+
+  geom_contour(color="gray90", binwidth = 0.1)+
   theme_minimal()+
   scale_fill_viridis(name="Growth Rate", na.value = "gray90",
                      limits = c(0,1.25))+
@@ -969,7 +964,7 @@ stGrowthPlot <- ggplot(stGrowthPreds, aes(x=StDens, y=AeDens,
 #models
 save(AedesSurvivalModel, AedesFecundityModel, AedesGrowthModel, 
      StephSurvivalModel, StephensiFecundityModel, StephensiGrowthModelBin, 
-     StephensiGrowthModel2, file = "finalModels.RData")
+     StephensiGrowthModel2, file = "code/finalModels.RData")
 ```
 
 ```{r save plots}
@@ -981,5 +976,7 @@ survivalPlot <- plot_grid(aeSurvPlot,
 aeFecPlot
 
 growthPlot <- plot_grid(aeGrowthPlot, stGrowthPlot, nrow = 2, labels = c("A", "B"))
+
+save(survivalPlot, aeFecPlot, growthPlot, file = "code/figures/finalFigures.RData")
 ```
 

@@ -1,0 +1,31 @@
+% Please add the following required packages to your document preamble:
+% \usepackage[normalem]{ulem}
+% \useunder{\uline}{\ul}{}
+\begin{table}[]
+\centering
+\caption{Table of results from mixed models of \textit{Ae. aegypti} survival, fecundity, and per capita growth as a function of temperature, interspecific density and intraspecific densities. }
+\label{ref:tab}
+\begin{tabular}{lllll}
+\textbf{}       & {\ul \textbf{Term}}           & {\ul \textbf{Estimate}} & {\ul \textbf{s.e.}} & {\ul \textbf{p-value}} \\
+\hline
+Aedes Survival  &                               &                         &                     &                        \\
+                & (Intercept)                   & 2.7801691               & 0.15444343          & \textless0.001         \\
+                & AeDensScale                   & -1.99257404             & 0.08363467          & \textless0.001         \\
+                & Temperature                   & 0.09638817              & 0.70679854          & 0.892                  \\
+                & Temperature\textasciicircum 2 & -3.83762892             & 0.51334119          & \textless0.001         \\
+                & StDensScale                   & -0.60399277             & 0.29535243          & 0.041                  \\
+                & StDensScale:TempNum           & 0.03404162              & 0.0124021           & 0.006                  \\
+\hline
+Aedes Fecundity &                               &                         &                     &                        \\
+                & (Intercept)                   & 4.274                   & 0.072               & \textless0.001         \\
+                & Aedes Density                 & -0.008                  & 0.001               & \textless0.001         \\
+                & Temperature                   & -3.041                  & 0.654               & \textless0.001         \\
+                & Temperature\textasciicircum 2 & -1.812                  & 0.657               & 0.006                  \\
+\hline
+Aedes Growth    &                               &                         &                     &                        \\
+                & (Intercept)                   & 1.188817675             & 0.003108282         & \textless0.001         \\
+                & AeDensScale                   & -0.057255404            & 0.00263072          & \textless0.001         \\
+                & poly(TempScale, 2)1           & 0.300784779             & 0.016861466         & \textless0.001         \\
+                & poly(TempScale, 2)2           & -0.158920057            & 0.016867225         & \textless0.001
+\end{tabular}
+\end{table}

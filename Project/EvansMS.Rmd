@@ -1,0 +1,131 @@
+---
+output: 
+  pdf_document:
+    citation_package: natbib
+    fig_caption: yes
+    keep_tex: yes
+    template: svm-latex-ms.tex
+title: "Temperature-dependent competition in container breeding mosquito species"
+author:
+- name: Michelle V. Evans
+  affiliation: Odum School of Ecology, University of Georgia
+abstract: "Mosquito-borne disease has been increasing in recent decades, prompting a proliferation of predictiong models of disease risk. Given the strong relationship between many mosquito life-history traits and temperature, the majority of these models predict mosquito dynamics as a function of temperature, an abiotic factor, on the assumption that it is relatively more important than biotic factors, such as species competition. However, many mosquito species, particularly container-breeders, share habitats at high densities, and is unknown what effect both intra and interspecific compeittion may have on population growth rates. Here, we explore the interactive effects of interspecific competition, intraspecific competition, and temperature on the population growth of two co-habiting mosquito species, *Aedes aegypti* and *Anopheles stephensi*, using a laboratory model system to parameterize demographic life history traits and calculate population growth rates. We find that both species' population growth rates are a function of both abiotic and biotic factors, but that an interaction between the two is rare. Given their importance, future models of mosquito dynamics should include both biotic and abiotic variables."
+keywords: "competition, mosquitoes, abiotic-biotic interactions, Ae. aegypti, An. stephenshi"
+date: ""
+geometry: margin=1in
+fontfamily: mathpazo
+fontsize: 12pt
+spacing: double
+biblio-style: ecolLet
+bibliography: references
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, include = F, warning = F, message = F)
+library(ggplot2)
+library(ggthemes)
+```
+
+```{r set ggplot theme}
+theme_set(theme_bw())
+```
+
+# Introduction
+
+The frequency of infectious disease emergence has been increasing since the mid-20th century. Incidence of vector borne diseases, specifically, have increased over 25% over the past decade [@jones2008], with notable recent outbreaks such as Zika and chikungunya in the Americas. One driver of this increase is land-use change, such as agricultural intensification and urbanization [@gottdenker2014; @jones2013]. Urbanization can cause increases in vector-borne disease through changes to mosquito habitat and environmental conditions. For container breeding species such as *Aedes aegypti*, the primary vector of dengue and yellow fever, urbanization increases the amount of habitat available for breeding [@zahouli2017; @li2014]. Further, urbanization can alter the microclimate of the environment through the urban heat island effect, leader to warmer temperatures in urban areas[@peng2012]. 
+
+Mosquitoes, being small ectotherms, are extremely susceptible to changes in temperature, which can significantly impact on life history traits relevant to demography and disease transmission [@murdock2017; @paaijmans2009]. The majority of past work has focused on the abiotic effects of urbanization, ignoring changes to biotic factors such as community composition and larval densities.  Mosquito population growth is density dependent in the larval stage [@juliano1998; @reiskind2009a], and can be mediated by environmental factors such as temperature [@costanzo2005; @lounibos2002a] , leading to a potential interaction between abiotic and biotic factors, defined as context-dependent competition.
+
+Many primary vectors of arboviruses are container breeding species, which often cohabit in containers with other mosquito species, leading to strong control via density-dependence and interspecific competition [@juliano2010]. For example, the invasion of the Southeastern United States by *Ae. albopictus* has lead to habitat partitioning with *Ae. aeygypti*, due to *Ae. albopictus*'s competitive dominance at low resource levels [@fader2016]. In this case, the vectors share many pathogens, and the dominance of an area by one species is not likely to introduce novel arboviruses to the population. However, in some systems, cohabiting vectors may transmit different pathogens, and competitive outcomes can have significant impacts on disease transmission. In urban India, for example, *Anopheles stephensi*, the primary vector of urban malaria, is often found cohabiting with *Ae. aegypti*, the primary vector of dengue [@thomas2016]. Both diseases have strong seasonal trends, due to seasonality in temperature and rainfall [@santos-vega2016a]. This seasonality of disease may be further mediated by competition between the vectors of the diseases, however, the outcome of competition between *An. stephensi* and *Ae. aeygypti*, and the extent to which it is seasonally dependent is unknown.
+
+Here, we explore the interactive effects of interspecific competition, intraspecific competition, and temperature on the population growth of two co-habiting mosquito species, *Aedes aegypti* and *Anopheles stephensi*, using a laboratory model system to parameterize demographic life history traits and calculate population growth rates. By evaluating how these treatments propogate up to the population level, we can estimatethe relative importance of abiotic and biotic factors on mosquito population dynamics and disease transmission.
+
+# Materials/Methods
+
+## Mosquito Rearing
+
+We used a response surface design to rear  *Aedes aegypti* (Mexico, F5) and *Anopheles stephensi* (Walter Reed strain) first-instar larvae across 5 temperatures at 15 densities for a total of 75 treatments. There were three total density levels (32, 64, and 128 individuals), each with 5 ratios of Aedes:Stephensi (0:4,1:3,2:2,3:1,4:0) (Fig. 1). The experimental setup was replicated twice.
+
+```{r fig1, fig.width=3, fig.height=3, fig.cap="Plot of density treatments used in experiment. Each group of fifteen density treatments was repeated across five temperatures (16C, 20C, 24C, 28C, 32C).", include=T}
+ggplot(data=data.frame(Aedes=c(0,8,16,24,32,0,16,32,48,64,0,32,64,96,128), 
+                       Stephensi = c(32,24,16,8,0,64,48,32,16,0,128,96,64,32,0)))+
+  geom_point(aes(x = Stephensi, y = Aedes), size=4)+
+  ylab("Ae. aegypti Density")+
+  xlab("An. stephensi Density")
+```
+
+Larvae were reared in 32 oz. glass jars with 250mL deionized water and 0.10g of pellet fish food (Hikari Cichlid Gold, baby size). Jars were covered with a fine mesh and placed in Percival incubators with a daily periodic fluctuation of 9C following the Parton-Logan equation, characterized by a sine wave during the daytime and an exponential curve during the nighttime [@parton1981]. Incubators were set to 80\% relative humidity and 12:12 hour light:dark cycle.
+
+To record information on mosquito survival and development rates, the daily numbers, species, and sex of mosquitoes were recorded per species ratio and temperature treatment.
+
+To record measures of adult female fecundity and longevity, we offered a subset of emerging mosquitoes a blood meal and followed individuals for the span of their life. The subset encompassed mosquitoes emerging during the period of peak emergence to ensure an adequate sample size and a similarly aged cohort at the time of the blood feed (4-6 days old). Adults were stored in reach-in Percival incubators at a constant 27C, 80\% relative humidity, 12:12 hr light:dark cycle and offered a 10\%  sucrose solution *ad libitum*. 48 hours prior to the blood meal, the sucrose solution was replaced with deionized water, which was removed 24 hours prior to the blood meal to encourage higher feeding rates. Blood meals consisting of whole human blood were administered through a water-jacketed membrance feeder kept at 38C. 
+
+Mosquitoes were allowed to feed for 20 minutes, after which blood fed females were sorted into individual 50 mL plastic centrifuge tubes. Moistened cotton was placed at the bottom of each tube, and covered with a filter paper to collect eggs. Each tube was covered with a fine mesh and kept in a walk-in incubator at the same environmental conditions noted above. Individual females were monitored daily for mortality and egg-laying events, after which the eggs were counted and the moistened cotton and filter paper removed. Females continued to be kept as above and offered a 10\% sucrose solution until death.
+
+## Calculating Population Growth Rates
+
+We calculated the per capita population growth rate (Equation \ref{eq:1}) per species ratio and temperature following [@livdahl1984]:
+
+\begin{equation} \label{eq:1}
+r' = \frac{ln(\frac{1}{N_0}\sum_{x}^{ }{A_x}f(\bar{w_x}))}{D+\frac{\sum_{x}^{ }xA_xf(\bar{w_x})}{\sum_{x}^{ }A_xf(\bar{w_x})}}
+\end{equation}
+
+Where $N_0$ is the initial number of female mosquitoes (assumed to be 50\% of the starting density), $A_x$ is the number of mosquitoes emerging on day $x$, $D$ is the time to reproduction following emergence (assumed to be 14 days [@livdahl1991]), and $f(\bar{w_x})$ is the mean fecundity as measured by egg counts. Because fecundity was only observed a subset of females from each treatment, mean predicted fecundity from statistical models (described below) was used for $f(\bar{w_x})$. We exponentially transformed $r'$ to calculate population growth rates as $\lambda$ in order to solve for netatively infinite values.
+
+## Statistical Analysis
+
+Generalized linear mixed models (GZLMs) were used to investigate the effects of interspecific densities, intraspecific densities, and temperature on the proportion of females surviving to adulthood, adult female fecundity, and population level growth rates. All models included replicate as a random effect (intercept). Rescaled covariates were used in models to account for differences in scale. For response variables from the *Ae. aegypti*, we fit a binomial GZLM (logit-link), a zero-inflated negative binomial mixed-model, and a linear mixed model to the survival, fecundity, and growth rates, respectively. *An. stephensi* had overall lower survival rates, leading to sparse, zero-inflated data for fecundity and growth rates. Therefore, we fit a GZLM with a binomial and logit link function, a negative binomial hurdle model, and a linera mixed-effects hurdle model to the survival, fecundity, and growth rates, respectively. The majority of mosquito life-history traits have a non-linear relatioship with temperature [@mordecai2017], and so second-order transformations were used when visual inspection revealed quadratic relationships. Model selection was conducted via manual forward step-wise AIC, and final models included only signficant variables, as evaluated by 95% confidence intervals. Model residuals were inspected visually to test for violations of assumptions of normality. Due to difficulty in visualizing raw multi-dimensional data, model predictions were used to generate figures.
+
+
+# Results
+
+```{r, eval = T, include = F}
+load("code/finalModels.RData")
+#create tidy table of results
+load("code/figures/finalFigures.RData")
+# csv of results
+results <- read.csv("code/results/resultsTable.csv", stringsAsFactors = F)
+#reformat
+colnames(results) <- c(NA, "Term", "Estimate", "s.e.", "p-value", NA, NA, "Term", "Estimate", "s.e.", "p-value")
+```
+
+```{r, results = 'asis', eval = T, message = T}
+print(knitr::kable(results, digits = 3, row.names = F, caption = "Table of results from mixed models of Ae.aegypti (left side) and An. stephensi (right side) survival, fecundity, and per capita growth as a function of temperature, interspecific density and intraspecific densities. ", format = "latex"))
+```
+
+## Results
+
+**Survival**: Both species experienced differential survival across experimental treatments, with *Ae. aegypti* survival rates higher than *An. stephensi* survival rates in all regimes. However, only *Ae. aegypti* was significantly impacted by temperature (Table 1), exhibiting a unimodal relationship with temperature, with the highest survival peaking around 24C (Figure 2A). *An. stephensi* survival did not differ across temperature, but did significantly decrease with increasing intraspecific and interspecific densities (Figure 2B), with interspecific densities having a larger negative effect than intraspecific densities (Table 1). The effect of *An. stephensi* density on *Ae. aegypti* survival was temperature dependent, with a stronger negative effect at cooler temperatures, gradually becoming a positive effect at warmer temperatures (Fig. 2A).
+
+```{r fig2, fig.width=6.5, fig.height=4, fig.cap="Results from binomial GZLMs of species' densities (along the axes) and temperature (by facet) on *Ae. aegypti* (A) and *A. stephensi* (B) probability of survival to emergence. Contour lines represent bins of 0.1.", include=T}
+plot(survivalPlot)
+```
+
+**Fecundity**: Only *Ae. aegypti* fecundity was significantly affected by any density or temperature treatment. Due to low *An. stephensi* survival rates, the sample sizes of females with which to measure fecundity was very small (with a median n=3), reducing the statistical power to identify an effect. *Ae. aegypti* fecundity decreased with increasing intraspecific densities and increasing temperatures (Fig. 3). Again, the relationship with temperature was unimodal, with highest fecundity around 20C for all intraspecific densities.
+
+```{r fig3, fig.width=4, fig.height=2, fig.cap="*Ae. aegypti* fecundity across temperature and intraspecific density. Interspecific density had no significant effect on fecundity. Contour lines represent bins of 10 eggs.", include=T}
+aeFecPlot
+```
+
+**Growth Rates**: When mosquito emergence and fecundity were integrated into the per capita growth equation, *Ae. aegypti* population growth was positive for all levels of treatment and densitites (Fig. 4A). *An. stephensi*, had few instances of positive growth (Fig. 4B), with many treatments resulting in no survival to adulthood, and therefore no offspring at timestep $t+1$. *Ae. aeygpti* growth rates decreased with increasing intraspecific densities and had a unimodal relationship with temperature, peaking in the 28C treatment. *An. stephensi* growth rate was a function of all three treatments, with inter- and intra-specific densities determining the first stage of the hurdle model (e.g. if growth was non-zero), and temperature influencing growth rates of non-zero treatments (Table 1). Growth rates decresed as either density increased, however the effect of *Ae. aegypti* densities was about two times as strong as that of *An. stephensi* densities (Table 1, Fig 4 B).
+
+```{r fig4, fig.width=6.5, fig.height=4, fig.cap="*Ae. aegypti* (A) and *An. stephensi* (B) growth rates across species densities (axes) and temperature (facet). Countour lines represent bins of 0.1.", include=T}
+growthPlot
+```
+
+
+# Discussion
+
+The context-dependence of biotic interactions is commonly seen in nature [@chamberlain2014], yet most studies of vector competition do not incorporate this environmental variation in their evaluation of competitive outcomes. Mosquitoes are particularly sensitive to temperature variation, with implications for context-dependent competition, population dynamics, and disease dynamics. We found that the population growth rates of two mosquito species, *Ae. aegypti* and *An. stephensi*, shifted with temperature and species densities, however, temperature did not change the direction of the species interaction on population growth rates.
+
+In general, we found that *Ae. aegypti* was more sensitive to changes in temperature than *An. stephensi*, with temperature significantly influencing survival, fecundity, and per capita growth rates.  This is in agreement with many single-species studies, that have found life history traits of *Ae. aegypti* to be temperature-dependent [@couret2014; @yang2009; @marinho2016]. Interstingly, we found the effect of temperature on adult fecundity to be unimodal, while other studies have female fecundity to have a negative linear relationship with temperature [@lounibos2002a]. This is likely due to our use of fluctuating temperatures, which result in temperatures below and above the thermal minimum and maximum of *Ae. aegypti* thermal performance curves [@mordecai2017]. When studied under fluctuating temperature regimes, [-@carrington2013] also found a non-linear relationship between fecundity and temperature.
+
+Our results suggest that *Ae. aegypti* will outcompete *An. stephensi* across all environmental temperatures. However, we did find that *An. stephensi* had a negative effect on *Ae. aegypti* survival at lower temperatures, gradually becoming positive at higher temperatures (Fig. 2A). The shift in direction from competition (-/-) to predation (+/-) could be caused by the the increase in *Ae. aegypti* development rates with increasing temperature. At higher temperatures, *Ae. aegypti* develop into adults more quickly [@farjana2011], and are able to outcompete the still slowly developing *An. stephensi* for limited resources. In field-based studies in Sub-saharan Africa, the presence of a competing *Anopheles* species have been shown to increase the development of the cohabiting species, when the focal species already has a relatively faster larval development rate [@paaijmans2009]. This may be due to plasticity in development rate, with larvae developing more quickly in the presence of a competitor.
+
+Although *An. stephensi* was less sensitive to environmental temperature, its survival and growth rates were significantly impacted by increases in both inter- and intra-specific densities. The effect of interspecific competition was stronger than intraspecific competition on both rates (Table 1). Following classical competition theory, species co-existence arises when species limit themselves more than their competitor (intraspecific >interspecific) [@levins1968]. Therefore, across the temperature regimes in our study, co-existence of both species in one container is unlikely. 
+
+However, both species exist in nature simultaneously [@thomas2016; @vikram2015], suggesting that co-existence is possible. This is further evidenced by the temporal overlap of dengue and malaria cases in urban areas of India [@telle2016; @santos-vega2016a]. One explanation for this regional coexistence in spite of local competitive exclusion may be due to habitat partitioning across temperature regimes. Our study found that *An. stephensi* was most competitive at cooler temperatures and low interspecific densities (Fig. 4A). In the field, *An. stephensi* are most often found in large cement water tanks [@thomas2016], which exhibit a cooler thermal environment than the preferred small-container habitat of *Ae. aegypti* [@cator2013], and, due to their large size, have relatively lower densities of mosquito larvae. This fine-scale habitat partitioning has been observed in the *Ae. aegypti*-*Ae. albopictus* system, in which *Ae. aegypti* is the weaker competitor, however there are no context-dependent differences in competitive strength [@juliano2004]. However, there is variation in competition amongst geographically-distinct strains of both species [@leisnham2010], and in the species' ability to survive dessication at the egg stage [@juliano2002]. This suggests that regional co-existence may be a result of genetic variation or species' advantages at non-competitive life-stages.
+
+We found that *An. stephensi* is outcompeted by *Ae. aegypti* across a range of temperature treatments. Co-existence of both species at a local scale is therefore unlikely. However, the magnitude of the effect of competition is dependent on temperature, and therefore, across a thermally heterogeneous landscape, co-existence may be possible at larger scales. We found all species' demographic rates to change as a function of species density, identifying density-dependence as an important control on population dynamics. Models of mosquito-borne disease rarely include effects of species density at the larval stage, particularly competition, [@reiner2013], and therefore may be incorrectly estimating population growth rates of these two species. Further, our experiment was conducted with only one strain of each species, and followed cohorts for one generation time, without calculating hatch rate success. Future work should explore the possibility of genotype x genotype x environment interations and expand the study over multiple generations.
+
+# References
