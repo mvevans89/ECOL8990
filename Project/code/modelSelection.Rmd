@@ -144,7 +144,7 @@ The residuals for this model are slightly heteroskedastic, but I think are fine 
 ```{r}
 summary(AedesSurvivalModel)
 
-confint(AedesSurvivalModel)
+#confint(AedesSurvivalModel)
 ```
 
 Plot predicted values in a heatmap.
@@ -171,7 +171,7 @@ aeSurvPlot <- ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
   geom_contour(color="black", binwidth = 0.1)+
   theme_minimal()+
   scale_fill_viridis(name="Prop. Emerged", na.value = "gray90",
-                     begin = 0, end = 1)+
+                     limits = c(0,1))+
   #geom_contour(color="white")+
   #scale_fill_gradient(low = "gray90", high = "gray10", na.value = "white")+
   facet_wrap(~TempNum, ncol = 5) +
@@ -259,7 +259,7 @@ For stephensi, model m8 is the best fit (survival ~ AeDens + StDens^2). Temperat
 
 ```{r}
 summary(StephSurvivalModel)
-confint(StephSurvivalModel)
+#confint(StephSurvivalModel)
 ```
 
 
@@ -316,7 +316,7 @@ stSurvPlot <- ggplot(predicted, aes(x=StDens, y=AeDens, z=preds))+
   geom_contour(color="gray90", binwidth=0.1)+
   theme_minimal()+
   scale_fill_viridis(name="Prop. Emerged", na.value = "gray90",
-                     begin = 0, end = 1)+
+                     limits = c(0,1))+
   facet_wrap(~TempNum, ncol = 5) +
   xlab("Stephensi Density") +
   ylab("Aegypti Density")
@@ -356,45 +356,45 @@ ggplot(data = aeFec, aes(y = Eggs, x = TempNum))+
 
 
 ```{r, warning = F}
-m0 <- glmmadmb(Eggs ~ 1 + (1|Replicate),
-                   data = aeFec,
-                    zeroInflation=TRUE, 
-                    family="nbinom")
-
-m1 <- glmmadmb(Eggs ~ TempNum + (1|Replicate),
-                   data = aeFec,
-                    zeroInflation=TRUE, 
-                    family="nbinom")
-
-m2 <- glmmadmb(Eggs ~ AeDens + (1|Replicate),
-                   data = aeFec,
-                    zeroInflation=TRUE, 
-                    family="nbinom")
-
-m3 <- glmmadmb(Eggs ~ AeDens + StDens + (1|Replicate),
-                   data = aeFec,
-                    zeroInflation=TRUE, 
-                    family="nbinom")
-
-m4 <- glmmadmb(Eggs ~ AeDens + TempNum + (1|Replicate),
-                   data = aeFec,
-                    zeroInflation=TRUE, 
-                    family="nbinom")
+# m0 <- glmmadmb(Eggs ~ 1 + (1|Replicate),
+#                    data = aeFec,
+#                     zeroInflation=TRUE, 
+#                     family="nbinom")
+# 
+# m1 <- glmmadmb(Eggs ~ TempNum + (1|Replicate),
+#                    data = aeFec,
+#                     zeroInflation=TRUE, 
+#                     family="nbinom")
+# 
+# m2 <- glmmadmb(Eggs ~ AeDens + (1|Replicate),
+#                    data = aeFec,
+#                     zeroInflation=TRUE, 
+#                     family="nbinom")
+# 
+# m3 <- glmmadmb(Eggs ~ AeDens + StDens + (1|Replicate),
+#                    data = aeFec,
+#                     zeroInflation=TRUE, 
+#                     family="nbinom")
+# 
+# m4 <- glmmadmb(Eggs ~ AeDens + TempNum + (1|Replicate),
+#                    data = aeFec,
+#                     zeroInflation=TRUE, 
+#                     family="nbinom")
 
 m5 <- glmmadmb(Eggs ~ AeDens + poly(TempNum,2) + (1|Replicate),
                   data = aeFec,
                     zeroInflation=TRUE, 
                     family="nbinom")
 
-m6 <- glmmadmb(Eggs ~ AeDens*poly(TempNum,2) + (1|Replicate),
-                   data = aeFec,
-                    zeroInflation=TRUE, 
-                    family="nbinom")
-
-m7 <- glmmadmb(Eggs ~ AeDens*TempNum + (1|Replicate),
-                   data = aeFec,
-                    zeroInflation=TRUE, 
-                    family="nbinom")
+# m6 <- glmmadmb(Eggs ~ AeDens*poly(TempNum,2) + (1|Replicate),
+#                    data = aeFec,
+#                     zeroInflation=TRUE, 
+#                     family="nbinom")
+# 
+# m7 <- glmmadmb(Eggs ~ AeDens*TempNum + (1|Replicate),
+#                    data = aeFec,
+#                     zeroInflation=TRUE, 
+#                     family="nbinom")
 
 ```
 
@@ -414,7 +414,7 @@ The best fitting model is m5 (AeDens + TempNum^2).
 ```{r}
 summary(AedesFecundityModel)
 
-confint(AedesFecundityModel)
+#confint(AedesFecundityModel)
 ```
 
 
@@ -519,7 +519,7 @@ The best fitting model is the null model. None of these factors affect Stephensi
 
 ```{r}
 summary(StephensiFecundityModel)
-confint(StephensiFecundityModel)
+#confint(StephensiFecundityModel)
 ```
 
 ```{r}
@@ -542,6 +542,8 @@ ggplot(data = stFec, aes(x=TempNum, y = resids, group = TempNum))+
   geom_boxplot() +
   theme_base()
 ```
+
+
 
 # Growth Rate
 
@@ -646,7 +648,7 @@ The final model is Aedes + Temp^2.
 
 ```{r}
 summary(AedesGrowthModel)
-confint(AedesGrowthModel)
+#confint(AedesGrowthModel)
 ```
 
 ```{r}
@@ -899,7 +901,7 @@ ggplot(data = GrowthStephensi, aes(x=TempNum, y = residsGam, group = TempNum))+
 
 ```{r}
 summary(StephensiGrowthModel2)
-confint(StephensiGrowthModel2)
+#confint(StephensiGrowthModel2)
 ```
 
 
@@ -978,5 +980,26 @@ aeFecPlot
 growthPlot <- plot_grid(aeGrowthPlot, stGrowthPlot, nrow = 2, labels = c("A", "B"))
 
 save(survivalPlot, aeFecPlot, growthPlot, file = "code/figures/finalFigures.RData")
+```
+
+Plots for presentation
+
+```{r}
+png("code/figures/pptSurvival.png", height = 1200, width = 1950, res = 300, bg = "gray90", units = "px")
+survivalPlot
+dev.off()
+```
+
+
+```{r}
+png("code/figures/pptGrowth.png", height = 1200, width = 1950, res = 300, bg = "gray90", units = "px")
+growthPlot
+dev.off()
+```
+
+```{r}
+png("code/figures/pptFecundity.png", height = 600, width = 1200, res = 300, bg = "gray90", units = "px")
+aeFecPlot
+dev.off()
 ```
 
